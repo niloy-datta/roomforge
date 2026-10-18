@@ -1,0 +1,17 @@
+{
+  "name": "roomforge-workspace",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ROOMFORGE — Architectural Renovation Platform and Material Calculators Suite",
+  "scripts": {
+    "dev": "npm --prefix roomforge run dev",
+    "build": "npm --prefix roomforge run build",
+    "start": "npm --prefix roomforge run start",
+    "lint": "npm --prefix roomforge run lint",
+    "typecheck": "npm --prefix roomforge run typecheck",
+    "test": "npm --prefix roomforge run test",
+    "test:unit": "npm --prefix roomforge run test:unit",
+    "test:legacy": "npm --prefix roomforge run test:legacy",
+    "test:e2e": "npm --prefix roomforge run test:e2e"
+  }
+}
