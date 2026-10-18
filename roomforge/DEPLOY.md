@@ -1,61 +1,93 @@
-# ROOMFORGE — Local run and deployment
+# ROOMFORGE — Production Deployment & Architecture Guide
 
-## Run locally (zero install)
+## Production Architecture (Next.js App Router)
+
+ROOMFORGE is a modern Next.js 15 App Router platform with React 19, TypeScript strict mode, and Tailwind CSS.
+All calculations run client-side with zero external database dependencies.
+
+- **GitHub Repository:** [https://github.com/niloy-datta/roomforge](https://github.com/niloy-datta/roomforge)
+- **Production Branch:** `main`
+- **Application Directory:** `roomforge/`
+- **Vercel Project ID:** `prj_XCDavCDzLImOz03ubXiIEjONIRTB`
+- **Production URL:** [https://roomforge.vercel.app](https://roomforge.vercel.app)
+
+---
+
+## Authoritative Deployment Strategy
+
+The repository supports both deployment strategies seamlessly:
+
+### Strategy A: Repository Root (Recommended for Git Integration)
+- Root `package.json` delegates `build`, `dev`, `start`, `lint`, and `test` to `roomforge/`.
+- Root `vercel.json` configures:
+  ```json
+  {
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "framework": "nextjs",
+    "installCommand": "cd roomforge && npm install",
+    "buildCommand": "cd roomforge && npm run build",
+    "outputDirectory": "roomforge/.next"
+  }
+  ```
+
+### Strategy B: Subdirectory Root (`roomforge/`)
+- If Vercel Project Settings > Root Directory is set to `roomforge`, `roomforge/vercel.json` configures:
+  ```json
+  {
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "framework": "nextjs"
+  }
+  ```
+
+---
+
+## Connecting Vercel to GitHub Continuous Deployment
+
+1. Navigate to [Vercel Dashboard](https://vercel.com/dashboard) and open the `roomforge` project.
+2. Go to **Settings** > **Git**.
+3. Under **Connected Git Repository**, select **GitHub** and connect `niloy-datta/roomforge`.
+4. Ensure the **Production Branch** is set to `main`.
+5. Trigger or await the automatic deployment: Vercel will pull the latest commit (`main`), run `npm run build`, and assign `https://roomforge.vercel.app`.
+
+---
+
+## Command Line Deployment (Vercel CLI)
+
+To deploy directly from the command line using Vercel CLI:
+
+```bash
+# Log in to Vercel (interactive)
+npx vercel login
+
+# Deploy directly to production
+cd roomforge
+npx vercel --prod
+```
+
+Or deploy non-interactively using an API token:
 
 ```bash
 cd roomforge
-python3 -m http.server 8000
+npx vercel --prod --token $VERCEL_TOKEN
 ```
 
-Open http://localhost:8000/ in a browser. All calculations are performed in the browser; there is no remote backend. Python is used only to serve the static files; alternatively use `npx serve` if available.
+---
 
-## Test calculations
+## Local Development & Testing
 
 ```bash
-npm test
+# Install dependencies
+cd roomforge
+npm install
+
+# Run development server
+npm run dev
+
+# Run full test suite (Typecheck, Lint, Vitest, Legacy, Playwright E2E, Build)
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run test:legacy
+npm run test:e2e
+npm run build
 ```
-
-Node.js >= 20 is required for the automated math tests. No `npm install` is necessary.
-
-## Publish to a *new* GitHub repository
-
-1. Create an empty repository named `roomforge` in your GitHub account (no README, license, or .gitignore needed).
-2. From this project directory, where the `main` branch and commit history already exist:
-
-```bash
-git remote add origin https://github.com/YOUR-USERNAME/roomforge.git
-git push -u origin main
-```
-
-3. In GitHub repository Settings > Pages, choose **Deploy from a branch** > `main` > `/ (root)` and save.
-4. Your public URL will typically be `https://YOUR-USERNAME.github.io/roomforge/`.
-
-All internal navigation uses relative paths so it works beneath a GitHub Pages project subpath.
-
-## Ads and growth
-
-This package contains a labeled, reserved ad placeholder on the guide page only. It does not load AdSense scripts or contain a publisher ID. Add ads only after a real publisher account is approved, policies are met, and the user experience is tested.
-
-## Current limitations
-
-- Rectangular rooms only, SVG floor illustration rather than a geometrically optimized cut list.
-- User-entered USD prices, not live retailer prices.
-- One browser-local saved configuration; share links encode values, not uploaded plans.
-- Print dialog can be saved as PDF. No server-side PDF generation.
-- No authentication, product inventory, checkout or 3D/AI photo previews.
-
-## Vercel production deployment (October 2026)
-
-A static self-contained build was deployed independently of Git to the existing Vercel team.
-
-- Project: `roomforge` (`prj_XCDavCDzLImOz03ubXiIEjONIRTB`)
-- Production alias: https://roomforge.vercel.app
-- Studio: https://roomforge.vercel.app/studio.html
-- Deployment: `dpl_ExD1ncf3XmXJxtNkqEHHqWurHsYQ` — API reports READY.
-- No password or Vercel SSO protection is enabled on this project.
-
-This deployment currently uses direct uploaded files, **not a Git-connected deploy pipeline**. It will not automatically update when the local `main` branch changes. GitHub repository creation was unavailable through the linked GitHub connector and was not silently replaced with changes to unrelated repos.
-
-Run `python3 scripts/build_standalone.py` to regenerate the deployed format from source. Do not manually modify `dist` because this directory is ignored by Git and reproducible.
-
-To set up continuous deployment in the future, create a GitHub repository, push `main`, and connect that new repository in the Vercel project settings. GitHub Actions checks are already included in `.github/workflows/ci.yml`.
