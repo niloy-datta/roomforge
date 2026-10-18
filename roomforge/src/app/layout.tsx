@@ -4,9 +4,12 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SkipLink } from '@/components/layout/SkipLink';
 import './globals.css';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roomforge.pages.dev';
+
 export const metadata: Metadata = {
-  title: 'ROOMFORGE · Visual Flooring Studio & Material Estimator',
-  description: 'Interactive 2D top-down flooring planner and deterministic box estimator. Test materials, waste allowances, and calculate precise flooring budgets.',
+  metadataBase: new URL(siteUrl),
+  title: 'ROOMFORGE · Visual Flooring Studio & Renovation Calculator',
+  description: 'Interactive 2D room planning and material estimation. Plan layouts, calculate cartons, and budget renovation materials with transparent formulas.',
   keywords: ['flooring calculator', 'flooring visualizer', 'room planner', 'square footage calculator', 'box count calculator', 'luxury vinyl plank', 'engineered oak'],
   authors: [{ name: 'RoomForge Architecture Team' }],
   openGraph: {

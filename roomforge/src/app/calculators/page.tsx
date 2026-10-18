@@ -21,12 +21,12 @@ export const metadata: Metadata = {
   title: 'Renovation & Material Calculators Suite | ROOMFORGE',
   description: 'Free, professional construction and home improvement calculators. Compute flooring cartons, tile & grout weight, paint gallons, concrete volume, drywall sheets, and complete project budgets.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators',
+    canonical: '/calculators',
   },
   openGraph: {
     title: 'Renovation & Material Calculators Suite | ROOMFORGE',
     description: 'Free professional calculators for flooring, tile, paint, concrete, drywall, and renovation budgets.',
-    url: 'https://roomforge.app/calculators',
+    url: '/calculators',
     type: 'website',
   },
 };
@@ -103,12 +103,12 @@ export default function CalculatorsHubPage() {
     '@type': 'CollectionPage',
     name: 'ROOMFORGE Renovation & Construction Calculators',
     description: 'Professional interactive calculators for flooring, tile, paint, concrete, drywall, and home renovation cost estimates.',
-    url: 'https://roomforge.app/calculators',
+    url: '/calculators',
     hasPart: CALCULATOR_DIRECTORY.map((c) => ({
       '@type': 'WebPage',
       name: c.title,
       description: c.description,
-      url: `https://roomforge.app${c.href}`,
+      url: c.href,
     })),
   };
 

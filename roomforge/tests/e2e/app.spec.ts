@@ -102,4 +102,24 @@ test.describe('RoomForge Web Application', () => {
     await expect(page.locator('h1')).toContainText(/Terms of Service/i);
     await expect(page.getByText('Important Architectural & Engineering Disclaimer')).toBeVisible();
   });
+
+  test('Studio 3D spatial preview, Projects modal, and CSV export are interactive', async ({ page }) => {
+    await page.goto('/studio');
+    // Check 3D View toggle
+    await page.getByRole('button', { name: /3D View/i }).click();
+    await expect(page.getByText(/3D Spatial Preview/i)).toBeVisible();
+
+    // Toggle back to 2D Plan
+    await page.getByRole('button', { name: /2D Plan/i }).click();
+    await expect(page.locator('svg[role="img"]')).toBeVisible();
+
+    // Open Projects Modal
+    await page.locator('#projects-button').click();
+    await expect(page.getByRole('heading', { name: /My Saved Projects & Plans/i })).toBeVisible();
+    await page.getByTitle(/Close dialog/i).click();
+    await expect(page.getByRole('heading', { name: /My Saved Projects & Plans/i })).not.toBeVisible();
+
+    // Verify CSV export button exists
+    await expect(page.locator('#export-csv-button')).toBeVisible();
+  });
 });

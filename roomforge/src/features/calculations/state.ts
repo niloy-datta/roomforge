@@ -20,7 +20,9 @@ export const PARAM_MAP: Record<keyof StudioSettings, string> = {
   showGrid: 'gr',
 };
 
-export function validatedSettings(candidate: Partial<Record<string, unknown>> = {}): StudioSettings {
+export function validatedSettings(
+  candidate: Partial<StudioSettings> | Partial<Record<string, unknown>> = {}
+): StudioSettings {
   const settings: StudioSettings = { ...DEFAULT_SETTINGS };
 
   if (candidate.shape === 'l-shape' || candidate.shape === 'l') {
@@ -132,3 +134,173 @@ export function clearSettings(): void {
     // ignore
   }
 }
+
+export const PROJECTS_STORAGE_KEY = 'roomforge-saved-projects-v1';
+
+export interface SavedProject {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  settings: StudioSettings;
+  schemaVersion: number;
+}
+
+export interface ExportedProjectPayload {
+  format: 'roomforge-project';
+  schemaVersion: number;
+  exportedAt: string;
+  name: string;
+  settings: StudioSettings;
+}
+
+/**
+ * Returns all saved projects from localStorage.
+ */
+export function getSavedProjects(): SavedProject[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((item) => item && typeof item === 'object' && item.id && item.settings)
+        .map((item) => ({
+          id: String(item.id),
+          name: String(item.name || 'Untitled Room'),
+          createdAt: String(item.createdAt || new Date().toISOString()),
+          updatedAt: String(item.updatedAt || new Date().toISOString()),
+          settings: validatedSettings(item.settings),
+          schemaVersion: Number(item.schemaVersion || 1),
+        }));
+    }
+  } catch {
+    // fallback empty array
+  }
+  return [];
+}
+
+/**
+ * Saves or updates a named project in the projects list.
+ */
+export function saveNamedProject(name: string, settings: StudioSettings, existingId?: string): SavedProject {
+  const projects = getSavedProjects();
+  const validSettings = validatedSettings(settings);
+  const now = new Date().toISOString();
+
+  let target: SavedProject;
+  if (existingId) {
+    const index = projects.findIndex((p) => p.id === existingId);
+    if (index >= 0) {
+      target = {
+        ...projects[index],
+        name: name.trim() || projects[index].name,
+        updatedAt: now,
+        settings: validSettings,
+      };
+      projects[index] = target;
+    } else {
+      target = {
+        id: existingId,
+        name: name.trim() || 'Room Project',
+        createdAt: now,
+        updatedAt: now,
+        settings: validSettings,
+        schemaVersion: 1,
+      };
+      projects.unshift(target);
+    }
+  } else {
+    target = {
+      id: `rf_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: name.trim() || `Room Project ${projects.length + 1}`,
+      createdAt: now,
+      updatedAt: now,
+      settings: validSettings,
+      schemaVersion: 1,
+    };
+    projects.unshift(target);
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    } catch (e) {
+      console.warn('Failed to save project list to localStorage', e);
+    }
+  }
+
+  return target;
+}
+
+/**
+ * Deletes a project by id.
+ */
+export function deleteSavedProject(id: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const projects = getSavedProjects().filter((p) => p.id !== id);
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Exports project as a JSON string payload.
+ */
+export function exportProjectAsJson(settings: StudioSettings, name: string = 'RoomForge Plan'): string {
+  const payload: ExportedProjectPayload = {
+    format: 'roomforge-project',
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    name,
+    settings: validatedSettings(settings),
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Validates and parses an imported project JSON file.
+ * Rejects invalid schemas, unvalidated strings, and code injection.
+ */
+export function validateAndImportProjectJson(
+  rawJson: string
+): { success: true; settings: StudioSettings; name: string } | { success: false; error: string } {
+  try {
+    if (!rawJson || rawJson.length > 500000) {
+      return { success: false, error: 'File size exceeds maximum allowed project configuration (500KB).' };
+    }
+    const parsed = JSON.parse(rawJson);
+    if (!parsed || typeof parsed !== 'object') {
+      return { success: false, error: 'Invalid JSON structure.' };
+    }
+
+    // Support both direct StudioSettings or wrapped ExportedProjectPayload
+    let candidateSettings: Partial<Record<string, unknown>> = {};
+    let projectName = 'Imported Room Project';
+
+    if (parsed.format === 'roomforge-project' && parsed.settings) {
+      candidateSettings = parsed.settings;
+      if (typeof parsed.name === 'string') {
+        projectName = parsed.name.slice(0, 80);
+      }
+    } else if (parsed.width !== undefined && parsed.length !== undefined) {
+      candidateSettings = parsed;
+    } else {
+      return { success: false, error: 'Unrecognized ROOMFORGE project file format.' };
+    }
+
+    const validated = validatedSettings(candidateSettings);
+    return {
+      success: true,
+      settings: validated,
+      name: projectName,
+    };
+  } catch {
+    return { success: false, error: 'Failed to parse JSON file. Ensure the file is not corrupted.' };
+  }
+}
+

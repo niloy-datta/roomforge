@@ -5,6 +5,9 @@ import { StudioPageClient } from '@/features/studio/StudioPageClient';
 export const metadata: Metadata = {
   title: 'Interactive Flooring Studio | ROOMFORGE',
   description: 'Visual 2D room floor plan editor with real-time material switches, box quantity calculations, and print-ready shopping summaries.',
+  alternates: {
+    canonical: '/studio',
+  },
 };
 
 export default function StudioPage() {

@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Concrete Calculator — Cubic Yards, Bags & Slab Volume | ROOMFORGE',
   description: 'Calculate concrete volume in cubic yards, cubic meters, and 80-lb, 60-lb, or 50-lb pre-mix bags. Compares bag mixing vs ready-mix delivery truck costs.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/concrete',
+    canonical: '/calculators/concrete',
   },
   openGraph: {
     title: 'Concrete Calculator — Cubic Yards, Bags & Slab Volume | ROOMFORGE',
     description: 'Calculate cubic yards and how many bags of concrete you need for patios, driveways, sidewalks, and foundation footings.',
-    url: 'https://roomforge.app/calculators/concrete',
+    url: '/calculators/concrete',
     type: 'article',
   },
 };

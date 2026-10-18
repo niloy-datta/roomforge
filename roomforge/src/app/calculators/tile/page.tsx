@@ -6,15 +6,15 @@ import { TileCalculatorClient } from '@/features/calculators/TileCalculatorClien
 import { Badge } from '@/components/ui/badge';
 
 export const metadata: Metadata = {
-  title: 'Tile & Grout Calculator — TCNA Standards & Box Estimator | ROOMFORGE',
-  description: 'Calculate ceramic and porcelain tiles, boxes needed, grout pounds by joint width, and spacer counts. Based on TCNA architectural coverage formulas.',
+  title: 'Tile & Grout Calculator — Coverage Formulas & Box Estimator | ROOMFORGE',
+  description: 'Calculate ceramic and porcelain tiles, boxes needed, grout pounds by joint width, and spacer counts. Based on standard industry volumetric coverage formulas.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/tile',
+    canonical: '/calculators/tile',
   },
   openGraph: {
-    title: 'Tile & Grout Calculator — TCNA Standards & Box Estimator | ROOMFORGE',
+    title: 'Tile & Grout Calculator — Coverage Formulas & Box Estimator | ROOMFORGE',
     description: 'Calculate tile counts, cartons, and grout powder pounds for floors, backsplashes, and walk-in showers.',
-    url: 'https://roomforge.app/calculators/tile',
+    url: '/calculators/tile',
     type: 'article',
   },
 };
@@ -31,7 +31,7 @@ export default function TileCalculatorPage() {
       price: '0',
       priceCurrency: 'USD',
     },
-    description: 'Accurate tile calculator determining box counts, gross tile numbers, grout weight in pounds, and spacer needs based on TCNA formulas.',
+    description: 'Accurate tile calculator determining box counts, gross tile numbers, grout weight in pounds, and spacer needs based on volumetric formulas.',
   };
 
   const faqSchema = {
@@ -43,7 +43,7 @@ export default function TileCalculatorPage() {
         name: 'How do you calculate how much grout is needed?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'The TCNA formula calculates grout volume based on tile length, width, thickness, and joint width: Volume (cu in) = ((Length + Width) × Joint Width × Thickness × Area in sq inches) / (Length × Width). Grout dry density is approximately 0.059 lbs per cubic inch.',
+          text: 'The standard formula calculates grout volume based on tile length, width, thickness, and joint width: Volume (cu in) = ((Length + Width) × Joint Width × Thickness × Area in sq inches) / (Length × Width). Grout dry density is approximately 0.059 lbs per cubic inch. Always verify with your specific grout manufacturer bag coverage table.',
         },
       },
       {
@@ -82,7 +82,7 @@ export default function TileCalculatorPage() {
           </nav>
 
           <Badge variant="sage" className="mb-2 font-mono text-xs">
-            TCNA ARCHITECTURAL FORMULA
+            VOLUMETRIC GROUT ESTIMATOR
           </Badge>
           <h1 className="text-3xl sm:text-5xl font-black text-forest tracking-tight">
             Tile & Grout Estimator

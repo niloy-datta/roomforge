@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Paint Calculator — Gallons, Coats & Opening Deductions | ROOMFORGE',
   description: 'Calculate paint gallons and liters for interior walls and ceilings. Factors door & window deductions, primer coats, coverage rates, and painter supplies.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/paint',
+    canonical: '/calculators/paint',
   },
   openGraph: {
     title: 'Paint Calculator — Gallons, Coats & Opening Deductions | ROOMFORGE',
     description: 'Calculate how many gallons of paint you need for walls and ceilings with automatic door and window subtractions.',
-    url: 'https://roomforge.app/calculators/paint',
+    url: '/calculators/paint',
     type: 'article',
   },
 };

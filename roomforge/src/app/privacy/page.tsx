@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Privacy Policy & Cookie Disclosure | ROOMFORGE',
   description: 'Learn how ROOMFORGE protects your privacy, uses local device storage for calculations, and complies with GDPR, CCPA, and Google AdSense policies.',
   alternates: {
-    canonical: 'https://roomforge.app/privacy',
+    canonical: '/privacy',
   },
 };
 

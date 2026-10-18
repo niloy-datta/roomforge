@@ -17,12 +17,18 @@ import {
   PackageCheck,
   Grid,
   Maximize,
+  FolderOpen,
+  FileSpreadsheet,
+  Box,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RoomSvgRenderer } from '@/components/shared/RoomSvgRenderer';
+import { Room3dPerspectiveRenderer } from '@/components/shared/Room3dPerspectiveRenderer';
+import { ProjectsModal } from './ProjectsModal';
+import { buildFlooringMaterialRows, downloadCsv, generateMaterialsCsv } from '@/lib/csvExport';
 import {
   calculateFlooring,
   convertLength,
@@ -62,6 +68,8 @@ export function StudioPageClient() {
   const [mobileTab, setMobileTab] = useState<'inputs' | 'canvas' | 'estimate'>('canvas');
   const [copiedNotice, setCopiedNotice] = useState<string | null>(null);
   const [isSavedLocally, setIsSavedLocally] = useState(false);
+  const [canvasMode, setCanvasMode] = useState<'2d' | '3d'>('2d');
+  const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
 
   // Initialize settings from URL search params or localStorage
   useEffect(() => {
@@ -244,6 +252,26 @@ export function StudioPageClient() {
     window.print();
   };
 
+  const handleExportCsv = () => {
+    if (!result.valid) {
+      showToast('Please enter valid room dimensions before exporting CSV.');
+      return;
+    }
+    const rows = buildFlooringMaterialRows(settings, result);
+    const csv = generateMaterialsCsv(rows, [
+      'ROOMFORGE · Visual Flooring Shopping & Materials List',
+      `Room Type: ${settings.shape === 'l-shape' ? 'L-Shaped Room' : 'Rectangular Room'} (${settings.width} × ${settings.length} ${settings.unit})`,
+      `Generated: ${new Date().toLocaleDateString()}`,
+    ]);
+    const filename = `roomforge-${settings.material}-${settings.shape}-estimate.csv`;
+    const ok = downloadCsv(filename, csv);
+    if (ok) {
+      showToast('Downloaded materials list (CSV) for Excel!');
+    } else {
+      showToast('Failed to trigger CSV download.');
+    }
+  };
+
   const handleReset = () => {
     if (confirm('Reset your room and material settings to the default sample project?')) {
       clearSettings();
@@ -315,6 +343,18 @@ export function StudioPageClient() {
             </Button>
 
             <Button
+              id="projects-button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsProjectsModalOpen(true)}
+              className="gap-1.5 text-xs h-8 text-forest font-bold border-sand-300 hover:bg-sand-100"
+              title="Open saved projects and plans"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-clay-600" />
+              <span className="hidden sm:inline">Projects</span>
+            </Button>
+
+            <Button
               id="copy-button"
               variant="outline"
               size="sm"
@@ -324,6 +364,18 @@ export function StudioPageClient() {
             >
               <Copy className="h-3.5 w-3.5 text-sage-600" />
               <span className="hidden md:inline">Copy List</span>
+            </Button>
+
+            <Button
+              id="export-csv-button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              className="gap-1.5 text-xs h-8"
+              title="Download materials list CSV for Excel / Sheets"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 text-sage-600" />
+              <span className="hidden md:inline">CSV</span>
             </Button>
 
             <Button
@@ -777,73 +829,107 @@ export function StudioPageClient() {
                     style={{ backgroundColor: activeMaterial.color }}
                   />
                   <span className="text-xs font-bold text-forest">{activeMaterial.name}</span>
-                  <span className="text-[11px] text-muted capitalize">
+                  <span className="text-[11px] text-muted capitalize hidden sm:inline">
                     ({settings.pattern})
                   </span>
                 </div>
 
-                {/* Canvas Zoom & View Controls */}
-                <div className="flex items-center space-x-1 rounded-lg border border-sand-200 bg-sand-50 p-1">
+                {/* 2D / 3D Canvas Switcher */}
+                <div className="flex rounded-md border border-sand-300 bg-sand-100 p-0.5 text-xs font-semibold">
                   <button
                     type="button"
-                    onClick={() => setZoom((z) => Math.min(2.0, Number((z + 0.15).toFixed(2))))}
-                    disabled={zoom >= 1.95}
-                    className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
-                    title="Zoom in"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </button>
-                  <span className="text-[11px] font-mono font-semibold px-1 text-muted">
-                    {Math.round(zoom * 100)}%
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
-                    disabled={zoom <= 0.55}
-                    className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
-                    title="Zoom out"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setZoom(1);
-                      setPan({ x: 0, y: 0 });
-                    }}
-                    className="p-1 rounded text-forest hover:bg-sand-200"
-                    title="Reset view"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateSettingsWithHistory((prev) => ({
-                        ...prev,
-                        showGrid: prev.showGrid === false ? true : false,
-                      }))
-                    }
-                    className={`p-1 rounded transition-colors ${
-                      settings.showGrid !== false ? 'text-forest bg-sand-200' : 'text-muted hover:bg-sand-200'
+                    onClick={() => setCanvasMode('2d')}
+                    className={`px-2.5 py-1 rounded transition-all text-xs ${
+                      canvasMode === '2d'
+                        ? 'bg-forest text-sand-50 shadow-xs font-bold'
+                        : 'text-muted hover:text-charcoal'
                     }`}
-                    title="Toggle architectural grid"
                   >
-                    <Grid className="h-3.5 w-3.5" />
+                    2D Plan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCanvasMode('3d')}
+                    className={`px-2.5 py-1 rounded transition-all text-xs flex items-center gap-1.5 ${
+                      canvasMode === '3d'
+                        ? 'bg-forest text-sand-50 shadow-xs font-bold'
+                        : 'text-muted hover:text-charcoal'
+                    }`}
+                  >
+                    <Box className="h-3.5 w-3.5" />
+                    3D View
                   </button>
                 </div>
+
+                {/* Canvas Zoom & View Controls (Only in 2D Mode) */}
+                {canvasMode === '2d' && (
+                  <div className="flex items-center space-x-1 rounded-lg border border-sand-200 bg-sand-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.min(2.0, Number((z + 0.15).toFixed(2))))}
+                      disabled={zoom >= 1.95}
+                      className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
+                      title="Zoom in"
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </button>
+                    <span className="text-[11px] font-mono font-semibold px-1 text-muted">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
+                      disabled={zoom <= 0.55}
+                      className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
+                      title="Zoom out"
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setZoom(1);
+                        setPan({ x: 0, y: 0 });
+                      }}
+                      className="p-1 rounded text-forest hover:bg-sand-200"
+                      title="Reset view"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSettingsWithHistory((prev) => ({
+                          ...prev,
+                          showGrid: prev.showGrid === false ? true : false,
+                        }))
+                      }
+                      className={`p-1 rounded transition-colors ${
+                        settings.showGrid !== false ? 'text-forest bg-sand-200' : 'text-muted hover:bg-sand-200'
+                      }`}
+                      title="Toggle architectural grid"
+                    >
+                      <Grid className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* The Interactive SVG Canvas */}
-              <div className="relative aspect-[720/510] w-full rounded-xl bg-sand-50/70 p-2 flex items-center justify-center border border-sand-200/60 overflow-hidden">
-                <RoomSvgRenderer settings={settings} zoom={zoom} pan={pan} onPanChange={setPan} />
-              </div>
-
-              {/* Canvas bottom architectural legend */}
-              <div className="mt-3 pt-3 border-t border-sand-200 flex items-center justify-between text-[11px] text-muted font-medium">
-                <span>Scale 2D blueprint rendering</span>
-                <span>Includes door cutaway & drop shadow</span>
-              </div>
+              {/* Canvas Content: 2D Interactive SVG or 3D Spatial Perspective */}
+              {canvasMode === '2d' ? (
+                <>
+                  <div className="relative aspect-[720/510] w-full rounded-xl bg-sand-50/70 p-2 flex items-center justify-center border border-sand-200/60 overflow-hidden">
+                    <RoomSvgRenderer settings={settings} zoom={zoom} pan={pan} onPanChange={setPan} />
+                  </div>
+                  {/* Canvas bottom architectural legend */}
+                  <div className="mt-3 pt-3 border-t border-sand-200 flex items-center justify-between text-[11px] text-muted font-medium">
+                    <span>Scale 2D blueprint rendering</span>
+                    <span>Includes door cutaway & drop shadow</span>
+                  </div>
+                </>
+              ) : (
+                <Room3dPerspectiveRenderer settings={settings} />
+              )}
             </div>
           </section>
 
@@ -967,14 +1053,26 @@ export function StudioPageClient() {
                   </div>
                 </div>
 
-                {/* Primary Action Button */}
-                <Button
-                  onClick={handleCopyShoppingList}
-                  className="w-full gap-2 shadow-md bg-clay-500 hover:bg-clay-600 font-bold"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy Shopping List
-                </Button>
+                {/* Primary & Export Action Buttons */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleCopyShoppingList}
+                    className="w-full gap-2 shadow-md bg-clay-500 hover:bg-clay-600 font-bold"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy Shopping List
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleExportCsv}
+                    className="w-full gap-2 border-sand-300 text-forest hover:bg-sand-100 font-semibold text-xs"
+                    title="Download spreadsheet-compatible CSV materials estimate"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-clay-600" />
+                    Export Materials (CSV)
+                  </Button>
+                </div>
 
                 {/* Precision Note */}
                 <p className="text-[10px] text-muted leading-tight text-center pt-2">
@@ -1048,6 +1146,15 @@ export function StudioPageClient() {
           * Materials estimation only. Excludes subfloor leveling, underlayment, baseboard trims, adhesives, and labor.
         </p>
       </div>
+
+      {/* Multi-Project Management, Backup & JSON Restore Modal */}
+      <ProjectsModal
+        isOpen={isProjectsModalOpen}
+        onClose={() => setIsProjectsModalOpen(false)}
+        currentSettings={settings}
+        onLoadProject={(newSettings) => updateSettingsWithHistory(newSettings)}
+        onShowToast={showToast}
+      />
     </div>
   );
 }

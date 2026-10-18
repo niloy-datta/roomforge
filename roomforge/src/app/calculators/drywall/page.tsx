@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Drywall Calculator — Sheets, Screws, Mud & Tape Estimator | ROOMFORGE',
   description: 'Calculate drywall sheets (4x8, 4x10, 4x12), drywall screws, joint tape rolls, and all-purpose compound mud buckets for walls and ceilings.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/drywall',
+    canonical: '/calculators/drywall',
   },
   openGraph: {
     title: 'Drywall Calculator — Sheets, Screws, Mud & Tape Estimator | ROOMFORGE',
     description: 'Calculate how many sheets of drywall, buckets of mud, and boxes of screws you need for your room or basement finishing project.',
-    url: 'https://roomforge.app/calculators/drywall',
+    url: '/calculators/drywall',
     type: 'article',
   },
 };

@@ -222,7 +222,7 @@ export function TileCalculatorClient() {
           <Card className="border-forest/20 shadow-md bg-white">
             <CardHeader className="bg-forest text-sand-50 rounded-t-xl pb-4">
               <Badge variant="sage" className="w-fit text-[10px] font-mono mb-1">
-                TCNA STANDARD FORMULA
+                VOLUMETRIC GROUT FORMULA
               </Badge>
               <CardTitle className="text-2xl font-black">
                 {result.valid ? `${result.boxesNeeded} Tile Boxes Required` : 'Enter Valid Specs'}

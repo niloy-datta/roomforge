@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Terms of Service & Estimating Disclaimer | ROOMFORGE',
   description: 'Terms of service, engineering disclaimer, and fair use guidelines for ROOMFORGE calculations and visual design tools.',
   alternates: {
-    canonical: 'https://roomforge.app/terms',
+    canonical: '/terms',
   },
 };
 

@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Flooring Calculator — Exact Box, Waste & Cost Estimator | ROOMFORGE',
   description: 'Calculate flooring cartons, square footage, pattern waste allowances (straight, diagonal, herringbone), and material budgets. Free contractor-grade flooring tool.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/flooring',
+    canonical: '/calculators/flooring',
   },
   openGraph: {
     title: 'Flooring Calculator — Exact Box, Waste & Cost Estimator | ROOMFORGE',
     description: 'Calculate how many boxes of laminate, vinyl, or hardwood you need with exact pattern waste factors.',
-    url: 'https://roomforge.app/calculators/flooring',
+    url: '/calculators/flooring',
     type: 'article',
   },
 };

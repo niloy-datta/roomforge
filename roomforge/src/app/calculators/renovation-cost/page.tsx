@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Renovation Cost Calculator — Kitchen, Bath & Room Estimator | ROOMFORGE',
   description: 'Estimate remodeling budgets for kitchens, bathrooms, basements, and full houses. Features trade allocations, finish tiers, labor vs DIY splits, and contingency planning.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/renovation-cost',
+    canonical: '/calculators/renovation-cost',
   },
   openGraph: {
     title: 'Renovation Cost Calculator — Kitchen, Bath & Room Estimator | ROOMFORGE',
     description: 'Accurately estimate home remodeling costs by room type, square footage, and contractor trade allocations.',
-    url: 'https://roomforge.app/calculators/renovation-cost',
+    url: '/calculators/renovation-cost',
     type: 'article',
   },
 };

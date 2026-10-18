@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   title: 'Flooring Material Comparison & 10-Year TCO Calculator | ROOMFORGE',
   description: 'Compare hardwood, luxury vinyl plank, laminate, porcelain tile, and natural stone across upfront material costs, installation labor, durability, and 10-year lifecycle TCO.',
   alternates: {
-    canonical: 'https://roomforge.app/calculators/material-comparison',
+    canonical: '/calculators/material-comparison',
   },
   openGraph: {
     title: 'Flooring Material Comparison & 10-Year TCO Calculator | ROOMFORGE',
     description: 'Compare upfront costs vs 10-year total cost of ownership across hardwood, LVP, tile, and laminate.',
-    url: 'https://roomforge.app/calculators/material-comparison',
+    url: '/calculators/material-comparison',
     type: 'article',
   },
 };
