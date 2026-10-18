@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Free Flooring Planner & Material Estimator | ROOMFORGE Studio</title>
+<meta name="description" content="Visualize flooring in a 2D room plan. Calculate floor area, waste allowance, boxes to buy and material costs instantly for free." />
+<meta name="theme-color" content="#f8f7f4" />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="assets/styles.css" />
+<script type="module" src="src/pages/studio.js"></script>
+</head>
+<body class="studio-page">
+<a class="skip-link" href="#workspace">Skip to planner</a>
+<header class="studio-header"><div class="studio-header-inner"><a class="brand" href="index.html" aria-label="RoomForge home"><span class="brand-mark">R<span class="brand-mark-dot">.</span></span><span>roomforge<span class="brand-dot">.</span></span></a><div class="studio-breadcrumb"><span class="breadcrumb-line"></span> WORKSPACE <span>/</span> FLOORING STUDIO</div><div class="studio-actions"><span class="autosave-label"><span class="autosave-dot"></span> <span id="save-status">Saved locally</span></span><button id="share-button" type="button" class="btn btn-outline btn-small"><span>↗</span> Share</button><button id="print-button" type="button" class="btn btn-dark btn-small">↓ <span class="print-label">Shopping list</span></button></div></div></header>
+<main id="workspace" class="studio-shell">
+  <div class="studio-titlebar"><div><div class="eyebrow"><span class="eyebrow-dash"></span> YOUR DESIGN WORKSPACE</div><h1>Flooring <em>studio.</em></h1><p>Every beautiful room starts with a plan. Make it yours.</p></div><button id="reset-button" class="text-button reset-button" type="button">↺ Reset project</button></div>
+  <div class="studio-mobile-nav" role="tablist" aria-label="Studio panels"><button class="mobile-tab active" type="button" role="tab" aria-selected="true" data-panel="plan">01 · Plan</button><button class="mobile-tab" type="button" role="tab" aria-selected="false" data-panel="materials">02 · Materials</button><button class="mobile-tab" type="button" role="tab" aria-selected="false" data-panel="estimate">03 · Estimate</button></div>
+  <div class="studio-layout">
+    <aside class="studio-sideleft studio-column" id="panel-plan">
+      <div class="side-top"><div class="panel-overline">01 / THE SPACE</div><h2>Your room</h2><p>Start with a few measurements.</p></div>
+      <div class="panel-body">
+        <div class="field-heading"><h3>Dimensions</h3><div class="segmented-unit" aria-label="Measurement units"><button type="button" data-unit="ft" class="selected" aria-pressed="true">ft</button><button type="button" data-unit="m" aria-pressed="false">m</button></div></div>
+        <div class="field-stack"><label for="width">Room width <span id="width-unit" class="hint-text">feet</span></label><div class="number-entry"><input id="width" type="number" inputmode="decimal" min="0.01" step="any" value="12" /><span class="display-unit">ft</span></div><small class="field-error" id="error-width"></small></div>
+        <div class="field-stack"><label for="length">Room length <span id="length-unit" class="hint-text">feet</span></label><div class="number-entry"><input id="length" type="number" inputmode="decimal" min="0.01" step="any" value="18" /><span class="display-unit">ft</span></div><small class="field-error" id="error-length"></small></div>
+        <div class="context-note"><span>ⓘ</span><p>For this first version, your room is rectangular. Measure the longest finished wall on each side.</p></div>
+        <div class="sidebar-divider"></div>
+        <div class="panel-overline">02 / THE FINISH</div><h3 class="material-title">Find your finish</h3><p class="material-subtitle">Select a material to preview your space.</p>
+        <div class="materials-list" id="material-list" role="radiogroup" aria-label="Flooring material">
+          <button type="button" class="material-choice" data-material="vinyl" role="radio" aria-checked="true"><span class="material-thumbnail vinyl-thumbnail"></span><span class="material-copy"><strong>Luxury vinyl plank</strong><small>Warm & versatile</small></span><span class="choice-radio"></span></button>
+          <button type="button" class="material-choice" data-material="oak" role="radio" aria-checked="false"><span class="material-thumbnail oak-thumbnail"></span><span class="material-copy"><strong>Engineered oak</strong><small>Timeless character</small></span><span class="choice-radio"></span></button>
+          <button type="button" class="material-choice" data-material="tile" role="radio" aria-checked="false"><span class="material-thumbnail tile-thumbnail"></span><span class="material-copy"><strong>Porcelain tile</strong><small>Refined & durable</small></span><span class="choice-radio"></span></button>
+          <button type="button" class="material-choice" data-material="laminate" role="radio" aria-checked="false"><span class="material-thumbnail laminate-thumbnail"></span><span class="material-copy"><strong>Oak-look laminate</strong><small>Effortless everyday</small></span><span class="choice-radio"></span></button>
+        </div>
+        <div class="field-stack pattern-field"><label for="pattern">Laying pattern</label><select id="pattern"><option value="staggered">Staggered / offset</option><option value="straight">Straight / grid</option></select></div>
+      </div>
+    </aside>
+    <section class="studio-center studio-column" aria-label="Live visual floor plan">
+      <div class="preview-head"><div><div class="panel-overline">YOUR CANVAS</div><h2>Room preview <span class="live-indicator"><span></span> LIVE</span></h2></div><span class="preview-head-detail">TOP-DOWN · 2D</span></div>
+      <div class="canvas-outer"><div class="canvas-corner-label">THE FLOOR PLAN <span>↗</span></div><div class="canvas-stage"><svg id="room-svg" class="room-svg" viewBox="0 0 720 520" role="img" aria-label="Top-down room preview"><title>Top-down floor plan</title></svg></div><div class="canvas-bottom"><span><span class="swatch-inline" id="swatch-inline"></span><span id="canvas-material">Luxury vinyl plank</span></span><div class="canvas-controls"><button id="zoom-out" class="icon-button" type="button" aria-label="Zoom out" title="Zoom out">−</button><span id="zoom-percent">100%</span><button id="zoom-in" class="icon-button" type="button" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-fit" class="zoom-fit" type="button">Fit</button></div></div></div>
+      <div class="studio-guidance"><div class="guidance-symbol">✧</div><div><strong>A quick note on accuracy</strong><p>Your floor plan is drawn to scale for visualization. Material estimates include an adjustable waste allowance—not a precise cut-list or installation quote.</p></div></div>
+    </section>
+    <aside class="studio-sideright studio-column" id="panel-estimate">
+      <div class="side-top"><div class="panel-overline">03 / THE NUMBERS</div><h2>Your estimate</h2><p>Make every square foot count.</p></div>
+      <div class="panel-body">
+        <div class="area-overview"><span>YOUR FLOOR AREA</span><div class="area-big"><strong id="area-number">216</strong> <span id="area-unit">ft²</span></div><span class="area-sub" id="area-converted">≈ 20.07 m²</span></div>
+        <div class="field-stack"><div class="field-split"><label for="waste">Waste allowance</label><strong id="waste-label">10%</strong></div><input id="waste" type="range" min="0" max="30" step="1" value="10" /><div class="range-labels"><span>0%</span><span>15%</span><span>30%</span></div><small class="field-error" id="error-waste"></small></div>
+        <div class="estimation-fields"><div class="field-stack"><label for="coverage">Coverage per box <span class="hint-text">ft²</span></label><div class="number-entry"><input id="coverage" type="number" min="0.01" step="any" inputmode="decimal" value="24"/><span class="display-unit">ft²</span></div><small class="field-error" id="error-coverage"></small></div><div class="field-stack"><label for="price">Price per box <span class="hint-text">USD</span></label><div class="number-entry number-money"><span class="dollar-unit">$</span><input id="price" type="number" min="0" step="any" inputmode="decimal" value="45" /></div><small class="field-error" id="error-price"></small></div></div>
+        <div class="field-stack tax-line"><label for="tax">Sales tax <span class="hint-text">optional, %</span></label><div class="number-entry"><input id="tax" type="number" min="0" max="40" step="any" inputmode="decimal" value="0" /><span class="display-unit">%</span></div><small class="field-error" id="error-tax"></small></div>
+        <p class="sample-note">Prices shown are editable examples, not live store quotes.</p>
+        <div class="sidebar-divider"></div>
+        <div class="estimate-breakdown"><div><span>Coverage needed</span><strong id="needed-amount">237.6 ft²</strong></div><div><span>Material boxes</span><strong id="box-count">10 boxes</strong></div><div><span>Coverage purchased</span><strong id="purchased-amount">240 ft²</strong></div><div><span>Material cost</span><strong id="material-cost">$450.00</strong></div><div><span>Sales tax</span><strong id="tax-amount">$0.00</strong></div></div>
+        <div class="total-block"><span>ESTIMATED MATERIAL TOTAL</span><strong id="total-cost">$450.00</strong><small>Excludes labor, trims, underlayment & prep.</small></div>
+        <div id="estimate-error" class="error-panel" role="alert" hidden>Fix the highlighted values to see your estimate.</div>
+        <button type="button" class="btn btn-accent btn-wide" id="print-button-side">↓ Print shopping list</button>
+        <button type="button" class="btn btn-outline btn-wide" id="copy-button">Copy estimate ↗</button>
+        <p class="estimate-privacy">♧ Your project stays on this device unless you share its link.</p>
+      </div>
+    </aside>
+  </div>
+  <section class="studio-footnote"><div><span class="tiny-logo">R.</span><strong>Plan confidently, build beautifully.</strong></div><p>RoomForge estimates are planning aids, not professional installation advice. Always verify product specifications and on-site measurements.</p><a href="guides/flooring-calculator.html">How the math works ↗</a></section>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<section id="print-area" class="print-area" aria-label="Printable shopping list"><div class="print-logo">ROOMFORGE.</div><h1>Flooring material shopping list</h1><p>Estimates based on dimensions and product inputs provided by you.</p><table><tbody id="print-table"></tbody></table><p class="print-disclaimer">Material quantities include a user-selected waste allowance; precise cutting, installation, labor, trims, transitions, underlayment and preparation are excluded. Prices are estimates, not supplier quotations.</p></section>
+</body>
+</html>

@@ -1,0 +1,27 @@
+name: ROOMFORGE CI
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'roomforge/**'
+      - '.github/workflows/roomforge-ci.yml'
+  pull_request:
+    paths:
+      - 'roomforge/**'
+      - '.github/workflows/roomforge-ci.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roomforge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: |
+          for file in src/core/*.js src/pages/*.js src/ui/*.js; do node --check "$file"; done
