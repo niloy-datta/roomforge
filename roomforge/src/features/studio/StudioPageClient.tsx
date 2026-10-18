@@ -10,11 +10,12 @@ import {
   Copy,
   Printer,
   RotateCcw,
+  RotateCw,
   Check,
   Layers,
   Percent,
-  DollarSign,
   PackageCheck,
+  Grid,
   Maximize,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ import {
 } from '@/features/calculations/state';
 import {
   FlooringMaterialKey,
+  FlooringPattern,
   FlooringUnit,
   StudioSettings,
 } from '@/features/calculations/types';
@@ -51,7 +53,12 @@ export function StudioPageClient() {
     return validatedSettings();
   });
 
+  // History stack for Undo / Redo
+  const [history, setHistory] = useState<StudioSettings[]>([DEFAULT_SETTINGS]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [mobileTab, setMobileTab] = useState<'inputs' | 'canvas' | 'estimate'>('canvas');
   const [copiedNotice, setCopiedNotice] = useState<string | null>(null);
   const [isSavedLocally, setIsSavedLocally] = useState(false);
@@ -61,9 +68,13 @@ export function StudioPageClient() {
     if (searchParams && (searchParams.has('w') || searchParams.has('l'))) {
       const fromUrl = parseSearchParams(searchParams);
       setSettings(fromUrl);
+      setHistory([fromUrl]);
+      setHistoryIndex(0);
     } else {
       const fromStorage = loadSettings();
       setSettings(fromStorage);
+      setHistory([fromStorage]);
+      setHistoryIndex(0);
     }
   }, [searchParams]);
 
@@ -71,6 +82,56 @@ export function StudioPageClient() {
   const result = useMemo(() => {
     return calculateFlooring(settings);
   }, [settings]);
+
+  // Push state to history stack (debounced for inputs)
+  const updateSettingsWithHistory = useCallback((newSettings: StudioSettings | ((prev: StudioSettings) => StudioSettings)) => {
+    setSettings((prev) => {
+      const next = typeof newSettings === 'function' ? newSettings(prev) : newSettings;
+      setHistory((h) => {
+        const sliced = h.slice(0, historyIndex + 1);
+        return [...sliced, next].slice(-25); // preserve last 25 steps
+      });
+      setHistoryIndex((idx) => Math.min(idx + 1, 24));
+      return next;
+    });
+  }, [historyIndex]);
+
+  // Undo / Redo handlers
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  const handleUndo = useCallback(() => {
+    if (!canUndo) return;
+    const prevIndex = historyIndex - 1;
+    setHistoryIndex(prevIndex);
+    setSettings(history[prevIndex]);
+  }, [canUndo, historyIndex, history]);
+
+  const handleRedo = useCallback(() => {
+    if (!canRedo) return;
+    const nextIndex = historyIndex + 1;
+    setHistoryIndex(nextIndex);
+    setSettings(history[nextIndex]);
+  }, [canRedo, historyIndex, history]);
+
+  // Keyboard shortcut listener for Ctrl+Z and Ctrl+Y
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // Auto-save valid settings to localStorage
   useEffect(() => {
@@ -96,18 +157,26 @@ export function StudioPageClient() {
     const newLength = Number.isFinite(settings.length)
       ? Number(convertLength(settings.length, oldUnit, newUnit).toPrecision(8))
       : settings.length;
+    const newCutoutWidth = Number.isFinite(settings.cutoutWidth)
+      ? Number(convertLength(settings.cutoutWidth, oldUnit, newUnit).toPrecision(8))
+      : settings.cutoutWidth;
+    const newCutoutLength = Number.isFinite(settings.cutoutLength)
+      ? Number(convertLength(settings.cutoutLength, oldUnit, newUnit).toPrecision(8))
+      : settings.cutoutLength;
 
-    setSettings((prev) => ({
+    updateSettingsWithHistory((prev) => ({
       ...prev,
       unit: newUnit,
       width: newWidth,
       length: newLength,
+      cutoutWidth: newCutoutWidth,
+      cutoutLength: newCutoutLength,
     }));
   };
 
   const handleMaterialSelect = (matKey: FlooringMaterialKey) => {
     const mat = MATERIALS[matKey];
-    setSettings((prev) => ({
+    updateSettingsWithHistory((prev) => ({
       ...prev,
       material: matKey,
       coverage: mat.coverage,
@@ -122,11 +191,17 @@ export function StudioPageClient() {
       return;
     }
     const mat = MATERIALS[settings.material];
+    const shapeLabel = settings.shape === 'l-shape' ? 'L-Shaped Room' : 'Rectangular Room';
     const text = [
       'ROOMFORGE · Visual Flooring Shopping List',
-      `Room Dimensions: ${formatNumber(settings.width, 2)} × ${formatNumber(settings.length, 2)} ${settings.unit}`,
+      `Room Shape: ${shapeLabel}`,
+      `Total Dimensions: ${formatNumber(settings.width, 2)} × ${formatNumber(settings.length, 2)} ${settings.unit}`,
+      settings.shape === 'l-shape'
+        ? `Corner Cutout: ${formatNumber(settings.cutoutWidth, 2)} × ${formatNumber(settings.cutoutLength, 2)} ${settings.unit}`
+        : null,
       `Material: ${mat.name} (${settings.pattern} pattern)`,
-      `Floor Area: ${formatNumber(result.areaSqFt, 2)} ft² (${formatNumber(result.areaSqM, 2)} m²)`,
+      `Net Floor Area: ${formatNumber(result.areaSqFt, 2)} ft² (${formatNumber(result.areaSqM, 2)} m²)`,
+      `Perimeter (Trims & Baseboards): ${formatNumber(result.perimeterFt, 1)} ft (${formatNumber(result.perimeterM, 1)} m)`,
       `Waste Allowance: ${settings.waste}%`,
       `Coverage Needed: ${formatNumber(result.neededSqFt, 2)} ft²`,
       `Coverage per Box: ${formatNumber(settings.coverage, 2)} ft²`,
@@ -137,7 +212,7 @@ export function StudioPageClient() {
       `Total Project Cost: ${formatMoney(result.totalCost)}`,
       '',
       'Notes: Materials estimate only. Excludes subfloor prep, underlayment, trims, transitions, labor and tool rental.',
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     try {
       await navigator.clipboard.writeText(text);
@@ -173,7 +248,10 @@ export function StudioPageClient() {
     if (confirm('Reset your room and material settings to the default sample project?')) {
       clearSettings();
       setSettings({ ...DEFAULT_SETTINGS });
+      setHistory([DEFAULT_SETTINGS]);
+      setHistoryIndex(0);
       setZoom(1);
+      setPan({ x: 0, y: 0 });
       router.replace('/studio');
       showToast('Project reset to default room.');
     }
@@ -191,13 +269,13 @@ export function StudioPageClient() {
         </div>
       )}
 
-      {/* Top Studio Bar */}
-      <div className="border-b border-sand-300 bg-white/70 backdrop-blur-md sticky top-16 z-20">
+      {/* Top Studio Action Bar */}
+      <div className="border-b border-sand-300 bg-white/80 backdrop-blur-md sticky top-16 z-20 transition-all">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-3">
-            <Badge variant="sage" className="gap-1 font-mono text-[11px]">
+            <Badge variant="sage" className="gap-1.5 font-mono text-[11px] tracking-wider uppercase">
               <span className="h-1.5 w-1.5 rounded-full bg-sage-500 animate-pulse" />
-              LIVE STUDIO
+              Interactive Studio
             </Badge>
             <span className="text-xs text-muted hidden sm:inline">
               {result.valid ? (
@@ -207,17 +285,39 @@ export function StudioPageClient() {
                   'Valid project'
                 )
               ) : (
-                <span className="text-red-600 font-medium">⚠ Fix inputs to calculate</span>
+                <span className="text-red-600 font-medium">⚠ Fix highlighted dimensions</span>
               )}
             </span>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center space-x-2">
+          {/* Quick Actions (Undo/Redo, Copy, Share, Print, Reset) */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
             <Button
               variant="outline"
               size="sm"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="h-8 px-2 text-xs"
+              title="Undo change (Ctrl+Z)"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="h-8 px-2 text-xs"
+              title="Redo change (Ctrl+Y)"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+            </Button>
+
+            <Button
               id="copy-button"
+              variant="outline"
+              size="sm"
               onClick={handleCopyShoppingList}
               className="gap-1.5 text-xs h-8"
               title="Copy shopping list to clipboard"
@@ -227,21 +327,21 @@ export function StudioPageClient() {
             </Button>
 
             <Button
+              id="share-button"
               variant="outline"
               size="sm"
-              id="share-button"
               onClick={handleShareUrl}
               className="gap-1.5 text-xs h-8"
               title="Copy shareable URL link"
             >
               <Share2 className="h-3.5 w-3.5 text-sage-600" />
-              <span className="hidden md:inline">Share Link</span>
+              <span className="hidden md:inline">Share</span>
             </Button>
 
             <Button
+              id="print-button"
               variant="outline"
               size="sm"
-              id="print-button"
               onClick={handlePrint}
               className="gap-1.5 text-xs h-8"
               title="Print project estimate"
@@ -251,100 +351,142 @@ export function StudioPageClient() {
             </Button>
 
             <Button
+              id="reset-button"
               variant="ghost"
               size="sm"
-              id="reset-button"
               onClick={handleReset}
-              className="text-xs h-8 text-muted hover:text-red-700 hover:bg-red-50"
-              title="Reset to default"
+              className="h-8 text-xs text-muted hover:text-red-600"
+              title="Reset to default settings"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
-
-        {/* Mobile Tab Switcher */}
-        <div className="flex md:hidden border-t border-sand-300 divide-x divide-sand-300 text-xs font-semibold bg-sand-50">
-          <button
-            type="button"
-            onClick={() => setMobileTab('inputs')}
-            className={`flex-1 py-2.5 text-center transition-colors ${
-              mobileTab === 'inputs' ? 'bg-sand-200 text-forest font-bold' : 'text-muted'
-            }`}
-          >
-            1. Dimensions
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('canvas')}
-            className={`flex-1 py-2.5 text-center transition-colors ${
-              mobileTab === 'canvas' ? 'bg-sand-200 text-forest font-bold' : 'text-muted'
-            }`}
-          >
-            2. 2D Visualizer
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('estimate')}
-            className={`flex-1 py-2.5 text-center transition-colors ${
-              mobileTab === 'estimate' ? 'bg-sand-200 text-forest font-bold' : 'text-muted'
-            }`}
-          >
-            3. Estimate
-          </button>
-        </div>
       </div>
 
-      {/* Main Studio 3-Panel Grid */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden border-b border-sand-300 bg-sand-200/90 px-4 py-2 sticky top-[113px] z-10 flex space-x-2">
+        <button
+          type="button"
+          onClick={() => setMobileTab('canvas')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+            mobileTab === 'canvas'
+              ? 'bg-forest text-sand-50 shadow-xs'
+              : 'text-muted-foreground hover:bg-sand-300'
+          }`}
+        >
+          2D Plan
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('inputs')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+            mobileTab === 'inputs'
+              ? 'bg-forest text-sand-50 shadow-xs'
+              : 'text-muted-foreground hover:bg-sand-300'
+          }`}
+        >
+          Room & Material
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('estimate')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+            mobileTab === 'estimate'
+              ? 'bg-forest text-sand-50 shadow-xs'
+              : 'text-muted-foreground hover:bg-sand-300'
+          }`}
+        >
+          Estimate & Cost
+        </button>
+      </div>
+
+      {/* Main Studio Body: 3-Column Architectural Desktop Layout */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6" id="main-content">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* PANEL 1: Input Controls (Left Column) */}
+          {/* PANEL 1: Room Dimensions & Material Controls (Left Column) */}
           <section
             className={`lg:col-span-4 space-y-5 ${
               mobileTab !== 'inputs' ? 'hidden lg:block' : 'block'
             }`}
-            aria-label="Room dimensions and materials controls"
+            aria-label="Room geometry and material settings"
           >
-            {/* Room Dimensions Card */}
-            <Card>
-              <CardHeader className="pb-3">
+            {/* Room Geometry Card */}
+            <Card className="border-sand-300 shadow-sm">
+              <CardHeader className="pb-3 border-b border-sand-200">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2 text-forest">
                     <Maximize className="h-4 w-4 text-clay-600" />
-                    Room Dimensions
+                    Room Geometry
                   </CardTitle>
-                  {/* Unit Toggle */}
-                  <div className="flex items-center rounded-lg border border-sand-300 bg-sand-100 p-0.5 text-xs font-semibold">
+                  {/* Feet / Meters Switcher */}
+                  <div className="flex rounded-md border border-sand-300 bg-sand-100 p-0.5 text-xs font-medium">
                     <button
                       type="button"
                       onClick={() => handleUnitToggle('ft')}
-                      className={`rounded-md px-2.5 py-1 transition-all ${
+                      className={`px-2 py-0.5 rounded transition-all ${
                         settings.unit === 'ft'
-                          ? 'bg-forest text-sand-50 shadow-xs'
+                          ? 'bg-forest text-sand-50 font-bold shadow-xs'
                           : 'text-muted hover:text-charcoal'
                       }`}
                     >
-                      Feet (ft)
+                      ft
                     </button>
                     <button
                       type="button"
                       onClick={() => handleUnitToggle('m')}
-                      className={`rounded-md px-2.5 py-1 transition-all ${
+                      className={`px-2 py-0.5 rounded transition-all ${
                         settings.unit === 'm'
-                          ? 'bg-forest text-sand-50 shadow-xs'
+                          ? 'bg-forest text-sand-50 font-bold shadow-xs'
                           : 'text-muted hover:text-charcoal'
                       }`}
                     >
-                      Meters (m)
+                      m
                     </button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="pt-4 space-y-4">
+                {/* Shape Selection: Rectangle vs L-Shape */}
+                <div>
+                  <label className="block text-xs font-bold text-forest mb-1.5">
+                    Room Floor Shape
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSettingsWithHistory((prev) => ({ ...prev, shape: 'rectangle' }))
+                      }
+                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all text-center ${
+                        settings.shape === 'rectangle'
+                          ? 'border-forest bg-forest text-sand-50 shadow-xs'
+                          : 'border-sand-300 bg-white text-charcoal hover:bg-sand-50'
+                      }`}
+                    >
+                      Rectangular Room
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSettingsWithHistory((prev) => ({ ...prev, shape: 'l-shape' }))
+                      }
+                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all text-center ${
+                        settings.shape === 'l-shape'
+                          ? 'border-forest bg-forest text-sand-50 shadow-xs'
+                          : 'border-sand-300 bg-white text-charcoal hover:bg-sand-50'
+                      }`}
+                    >
+                      L-Shaped Room
+                    </button>
+                  </div>
+                </div>
+
+                {/* Overall Dimensions (Width x Length) */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-forest mb-1.5">
-                      Width ({settings.unit})
+                      Total Width ({settings.unit})
                     </label>
                     <Input
                       id="width"
@@ -366,7 +508,7 @@ export function StudioPageClient() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-forest mb-1.5">
-                      Length ({settings.unit})
+                      Total Length ({settings.unit})
                     </label>
                     <Input
                       id="length"
@@ -388,6 +530,57 @@ export function StudioPageClient() {
                   </div>
                 </div>
 
+                {/* L-Shaped Corner Cutout Inputs */}
+                {settings.shape === 'l-shape' && (
+                  <div className="p-3.5 rounded-xl bg-sand-200/60 border border-sand-300 space-y-3">
+                    <span className="text-xs font-bold text-forest block">
+                      Corner Cutout Dimensions
+                    </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted mb-1">
+                          Cutout Width ({settings.unit})
+                        </label>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0.1"
+                          value={Number.isFinite(settings.cutoutWidth) ? settings.cutoutWidth : ''}
+                          onChange={(e) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              cutoutWidth: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
+                            }))
+                          }
+                          suffix={settings.unit}
+                          error={result.errors.cutoutWidth}
+                          placeholder="e.g. 4"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted mb-1">
+                          Cutout Length ({settings.unit})
+                        </label>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0.1"
+                          value={Number.isFinite(settings.cutoutLength) ? settings.cutoutLength : ''}
+                          onChange={(e) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              cutoutLength: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
+                            }))
+                          }
+                          suffix={settings.unit}
+                          error={result.errors.cutoutLength}
+                          placeholder="e.g. 6"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Waste Allowance Slider */}
                 <div className="pt-2 border-t border-sand-200">
                   <div className="flex items-center justify-between mb-1.5">
@@ -395,11 +588,12 @@ export function StudioPageClient() {
                       <Percent className="h-3.5 w-3.5 text-sage-600" />
                       Waste Allowance
                     </label>
-                    <span className="text-xs font-bold text-clay-600 bg-clay-50 px-2 py-0.5 rounded border border-clay-200">
+                    <span className="text-xs font-bold text-clay-600 bg-clay-50 px-2 py-0.5 rounded border border-clay-200 font-mono">
                       {settings.waste}%
                     </span>
                   </div>
                   <input
+                    id="waste"
                     type="range"
                     min="0"
                     max="30"
@@ -420,14 +614,14 @@ export function StudioPageClient() {
             </Card>
 
             {/* Flooring Material Presets Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
+            <Card className="border-sand-300 shadow-sm">
+              <CardHeader className="pb-3 border-b border-sand-200">
+                <CardTitle className="text-base flex items-center gap-2 text-forest">
                   <Layers className="h-4 w-4 text-clay-600" />
-                  Flooring Material
+                  Flooring Material & Presets
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-2.5">
                   {MATERIAL_KEYS.map((key) => {
                     const mat = MATERIALS[key];
@@ -437,131 +631,131 @@ export function StudioPageClient() {
                         key={key}
                         type="button"
                         onClick={() => handleMaterialSelect(key)}
-                        className={`p-3 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                        className={`text-left p-3 rounded-xl border transition-all ${
                           isSelected
-                            ? 'border-clay-500 bg-clay-50/40 ring-2 ring-clay-400/30'
-                            : 'border-sand-300 bg-white hover:border-sand-400 hover:bg-sand-50/60'
+                            ? 'border-clay-500 bg-clay-50/70 shadow-xs ring-1 ring-clay-400'
+                            : 'border-sand-300 bg-white hover:bg-sand-50'
                         }`}
                       >
-                        <div className="flex items-center justify-between w-full mb-2">
+                        <div className="flex items-center space-x-2">
                           <span
-                            className="h-4 w-4 rounded-full border border-black/10 shadow-inner"
+                            className="h-3.5 w-3.5 rounded-full border border-black/15 shadow-xs shrink-0"
                             style={{ backgroundColor: mat.color }}
                           />
-                          {isSelected && <Check className="h-3.5 w-3.5 text-clay-600" />}
+                          <span className="text-xs font-bold text-forest truncate">{mat.short}</span>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-forest leading-tight">{mat.name}</p>
-                          <p className="text-[11px] text-muted mt-0.5">
-                            ${mat.price}/box · {mat.coverage} ft²
-                          </p>
-                        </div>
+                        <p className="text-[10px] text-muted mt-1 truncate">
+                          {formatMoney(mat.price)} · {mat.coverage} ft²/box
+                        </p>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Laying Pattern Switcher */}
-                <div className="pt-2">
-                  <label className="block text-xs font-bold text-forest mb-1.5">Laying Pattern</label>
+                {/* Laying Pattern Selector */}
+                <div className="pt-2 border-t border-sand-200">
+                  <label className="block text-xs font-bold text-forest mb-2">
+                    Laying Pattern
+                  </label>
                   <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSettings((p) => ({ ...p, pattern: 'staggered' }))}
-                      className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-all ${
-                        settings.pattern === 'staggered'
-                          ? 'border-forest bg-forest text-sand-50'
-                          : 'border-sand-300 bg-white text-muted-foreground hover:bg-sand-100'
-                      }`}
-                    >
-                      Staggered Planks
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSettings((p) => ({ ...p, pattern: 'straight' }))}
-                      className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-all ${
-                        settings.pattern === 'straight'
-                          ? 'border-forest bg-forest text-sand-50'
-                          : 'border-sand-300 bg-white text-muted-foreground hover:bg-sand-100'
-                      }`}
-                    >
-                      Straight Grid
-                    </button>
+                    {[
+                      { id: 'staggered', label: 'Staggered (1/2 Offset)' },
+                      { id: 'straight', label: 'Straight (Grid Stack)' },
+                      { id: 'diagonal', label: 'Diagonal 45° Angle' },
+                      { id: 'herringbone', label: 'Herringbone Parquet' },
+                    ].map((pat) => (
+                      <button
+                        key={pat.id}
+                        type="button"
+                        onClick={() =>
+                          updateSettingsWithHistory((prev) => ({
+                            ...prev,
+                            pattern: pat.id as FlooringPattern,
+                          }))
+                        }
+                        className={`p-2 rounded-lg border text-xs font-medium transition-all text-center ${
+                          settings.pattern === pat.id
+                            ? 'border-forest bg-forest text-sand-50 font-bold shadow-xs'
+                            : 'border-sand-300 bg-white text-muted hover:text-charcoal hover:bg-sand-50'
+                        }`}
+                      >
+                        {pat.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Custom Box Coverage & Pricing Details */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-clay-600" />
-                  Product & Pricing Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                {/* Editable Material Details (Box Coverage, Price, Sales Tax) */}
+                <div className="pt-2 border-t border-sand-200 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-forest mb-1">
+                        Coverage / Box
+                      </label>
+                      <Input
+                        id="coverage"
+                        type="number"
+                        step="any"
+                        min="1"
+                        max="2000"
+                        value={Number.isFinite(settings.coverage) ? settings.coverage : ''}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            coverage: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
+                          }))
+                        }
+                        suffix="ft²"
+                        error={result.errors.coverage}
+                        placeholder="24"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-forest mb-1">
+                        Price / Box
+                      </label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="any"
+                        min="0"
+                        max="100000"
+                        value={Number.isFinite(settings.price) ? settings.price : ''}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            price: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
+                          }))
+                        }
+                        prefix="$"
+                        error={result.errors.price}
+                        placeholder="45"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-forest mb-1">
-                      Box Coverage (ft²)
+                      Sales Tax (% optional)
                     </label>
                     <Input
-                      type="number"
-                      step="any"
-                      min="1"
-                      max="2000"
-                      value={Number.isFinite(settings.coverage) ? settings.coverage : ''}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          coverage: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
-                        }))
-                      }
-                      suffix="ft²"
-                      error={result.errors.coverage}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-forest mb-1">Price per Box</label>
-                    <Input
+                      id="tax"
                       type="number"
                       step="any"
                       min="0"
-                      max="100000"
-                      value={Number.isFinite(settings.price) ? settings.price : ''}
+                      max="40"
+                      value={Number.isFinite(settings.tax) ? settings.tax : ''}
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev,
-                          price: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
+                          tax: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
                         }))
                       }
-                      suffix="$"
-                      error={result.errors.price}
+                      suffix="%"
+                      error={result.errors.tax}
+                      placeholder="0"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-forest mb-1">
-                    Sales Tax (% optional)
-                  </label>
-                  <Input
-                    type="number"
-                    step="any"
-                    min="0"
-                    max="40"
-                    value={Number.isFinite(settings.tax) ? settings.tax : ''}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        tax: e.target.value === '' ? (NaN as unknown as number) : Number(e.target.value),
-                      }))
-                    }
-                    suffix="%"
-                    error={result.errors.tax}
-                    placeholder="0"
-                  />
                 </div>
               </CardContent>
             </Card>
@@ -583,17 +777,17 @@ export function StudioPageClient() {
                     style={{ backgroundColor: activeMaterial.color }}
                   />
                   <span className="text-xs font-bold text-forest">{activeMaterial.name}</span>
-                  <span className="text-[11px] text-muted">
-                    ({settings.pattern === 'staggered' ? 'Staggered' : 'Straight'})
+                  <span className="text-[11px] text-muted capitalize">
+                    ({settings.pattern})
                   </span>
                 </div>
 
-                {/* Zoom Controls */}
+                {/* Canvas Zoom & View Controls */}
                 <div className="flex items-center space-x-1 rounded-lg border border-sand-200 bg-sand-50 p-1">
                   <button
                     type="button"
-                    onClick={() => setZoom((z) => Math.min(1.8, Number((z + 0.15).toFixed(2))))}
-                    disabled={zoom >= 1.7}
+                    onClick={() => setZoom((z) => Math.min(2.0, Number((z + 0.15).toFixed(2))))}
+                    disabled={zoom >= 1.95}
                     className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
                     title="Zoom in"
                   >
@@ -605,7 +799,7 @@ export function StudioPageClient() {
                   <button
                     type="button"
                     onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.15).toFixed(2))))}
-                    disabled={zoom <= 0.6}
+                    disabled={zoom <= 0.55}
                     className="p-1 rounded text-forest hover:bg-sand-200 disabled:opacity-40"
                     title="Zoom out"
                   >
@@ -613,23 +807,41 @@ export function StudioPageClient() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setZoom(1)}
+                    onClick={() => {
+                      setZoom(1);
+                      setPan({ x: 0, y: 0 });
+                    }}
                     className="p-1 rounded text-forest hover:bg-sand-200"
-                    title="Reset zoom"
+                    title="Reset view"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSettingsWithHistory((prev) => ({
+                        ...prev,
+                        showGrid: prev.showGrid === false ? true : false,
+                      }))
+                    }
+                    className={`p-1 rounded transition-colors ${
+                      settings.showGrid !== false ? 'text-forest bg-sand-200' : 'text-muted hover:bg-sand-200'
+                    }`}
+                    title="Toggle architectural grid"
+                  >
+                    <Grid className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
               {/* The Interactive SVG Canvas */}
-              <div className="relative aspect-[720/510] w-full rounded-xl bg-sand-50/60 p-2 flex items-center justify-center border border-sand-200/60">
-                <RoomSvgRenderer settings={settings} zoom={zoom} />
+              <div className="relative aspect-[720/510] w-full rounded-xl bg-sand-50/70 p-2 flex items-center justify-center border border-sand-200/60 overflow-hidden">
+                <RoomSvgRenderer settings={settings} zoom={zoom} pan={pan} onPanChange={setPan} />
               </div>
 
               {/* Canvas bottom architectural legend */}
               <div className="mt-3 pt-3 border-t border-sand-200 flex items-center justify-between text-[11px] text-muted font-medium">
-                <span>Top-down scale rendering</span>
+                <span>Scale 2D blueprint rendering</span>
                 <span>Includes door cutaway & drop shadow</span>
               </div>
             </div>
@@ -673,7 +885,7 @@ export function StudioPageClient() {
                 {/* Detailed Math Breakdown Rows */}
                 <div className="space-y-2.5 text-xs">
                   <div className="flex justify-between py-1 border-b border-sand-200">
-                    <span className="text-muted">Room Area</span>
+                    <span className="text-muted">Net Room Area</span>
                     <span id="area-number" className="font-bold text-forest">
                       {result.areaSqFt !== undefined
                         ? settings.unit === 'ft'
@@ -689,6 +901,17 @@ export function StudioPageClient() {
                           : '—'}
                         )
                       </span>
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-1 border-b border-sand-200">
+                    <span className="text-muted">Perimeter (Trims)</span>
+                    <span className="font-bold text-forest">
+                      {result.perimeterFt !== undefined
+                        ? settings.unit === 'ft'
+                          ? `${formatNumber(result.perimeterFt, 1)} ft`
+                          : `${formatNumber(result.perimeterM, 1)} m`
+                        : '—'}
                     </span>
                   </div>
 
@@ -732,7 +955,7 @@ export function StudioPageClient() {
 
                   {settings.tax > 0 && (
                     <div className="flex justify-between py-1 border-b border-sand-200">
-                      <span className="text-muted">Sales Tax ({settings.waste}%)</span>
+                      <span className="text-muted">Sales Tax ({settings.tax}%)</span>
                       <span className="font-bold text-forest">{formatMoney(result.taxAmount)}</span>
                     </div>
                   )}
@@ -755,7 +978,7 @@ export function StudioPageClient() {
 
                 {/* Precision Note */}
                 <p className="text-[10px] text-muted leading-tight text-center pt-2">
-                  Material estimate only. Labor, transition trims, underlayment, subfloor prep and deliveries excluded.
+                  Deterministic calculation based on manufacturer specifications. Excludes subfloor preparation, adhesives, and labor.
                 </p>
               </CardContent>
             </Card>
@@ -763,46 +986,67 @@ export function StudioPageClient() {
         </div>
       </main>
 
-      {/* Hidden Print Container */}
+      {/* Hidden Print Container: Printed cleanly when window.print() is called */}
       <div className="hidden print:block p-8 bg-white text-black print-only">
         <h1 className="text-2xl font-black mb-1">ROOMFORGE · Visual Flooring Shopping List</h1>
         <p className="text-xs text-gray-600 mb-6">Generated on {new Date().toLocaleDateString()}</p>
         <table className="w-full text-sm border-collapse border border-gray-300">
           <tbody>
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Room Dimensions</td>
+              <td className="py-2 px-3 font-bold bg-gray-100">Room Shape</td>
+              <td className="py-2 px-3">{settings.shape === 'l-shape' ? 'L-Shaped Room' : 'Rectangular Room'}</td>
+            </tr>
+            <tr className="border-b border-gray-300">
+              <td className="py-2 px-3 font-bold bg-gray-100">Total Dimensions</td>
               <td className="py-2 px-3">{settings.width} × {settings.length} {settings.unit}</td>
             </tr>
+            {settings.shape === 'l-shape' && (
+              <tr className="border-b border-gray-300">
+                <td className="py-2 px-3 font-bold bg-gray-100">Corner Cutout</td>
+                <td className="py-2 px-3">{settings.cutoutWidth} × {settings.cutoutLength} {settings.unit}</td>
+              </tr>
+            )}
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Floor Area</td>
-              <td className="py-2 px-3">{formatNumber(result.areaSqFt, 2)} ft² ({formatNumber(result.areaSqM, 2)} m²)</td>
-            </tr>
-            <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Material</td>
+              <td className="py-2 px-3 font-bold bg-gray-100">Material & Pattern</td>
               <td className="py-2 px-3">{activeMaterial.name} ({settings.pattern})</td>
             </tr>
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Waste Allowance</td>
+              <td className="py-2 px-3 font-bold bg-gray-100">Net Floor Area</td>
+              <td className="py-2 px-3">{formatNumber(result.areaSqFt, 2)} ft² ({formatNumber(result.areaSqM, 2)} m²)</td>
+            </tr>
+            <tr className="border-b border-gray-300">
+              <td className="py-2 px-3 font-bold bg-gray-100">Perimeter (Trims)</td>
+              <td className="py-2 px-3">{formatNumber(result.perimeterFt, 1)} ft</td>
+            </tr>
+            <tr className="border-b border-gray-300">
+              <td className="py-2 px-3 font-bold bg-gray-100">Waste Factor</td>
               <td className="py-2 px-3">{settings.waste}%</td>
             </tr>
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Boxes to Purchase</td>
+              <td className="py-2 px-3 font-bold bg-gray-100">Total Required Coverage</td>
+              <td className="py-2 px-3">{formatNumber(result.neededSqFt, 2)} ft²</td>
+            </tr>
+            <tr className="border-b border-gray-300">
+              <td className="py-2 px-3 font-bold bg-gray-100">Box Specification</td>
+              <td className="py-2 px-3">{settings.coverage} ft² per carton</td>
+            </tr>
+            <tr className="border-b border-gray-300 bg-gray-50">
+              <td className="py-2 px-3 font-bold">Boxes to Purchase</td>
               <td className="py-2 px-3 font-bold text-base">{result.boxes} boxes</td>
             </tr>
             <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Box Coverage</td>
-              <td className="py-2 px-3">{formatNumber(settings.coverage, 2)} ft² / box</td>
+              <td className="py-2 px-3 font-bold bg-gray-100">Material Subtotal</td>
+              <td className="py-2 px-3">{formatMoney(result.materialCost)}</td>
             </tr>
-            <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Price per Box</td>
-              <td className="py-2 px-3">{formatMoney(settings.price)}</td>
-            </tr>
-            <tr className="border-b border-gray-300">
-              <td className="py-2 px-3 font-bold bg-gray-100">Estimated Total</td>
-              <td className="py-2 px-3 font-bold text-base text-gray-900">{formatMoney(result.totalCost)}</td>
+            <tr className="border-b border-gray-300 bg-gray-100 font-bold">
+              <td className="py-2 px-3">Total Estimated Cost</td>
+              <td className="py-2 px-3 text-lg">{formatMoney(result.totalCost)}</td>
             </tr>
           </tbody>
         </table>
+        <p className="text-[11px] text-gray-500 mt-6">
+          * Materials estimation only. Excludes subfloor leveling, underlayment, baseboard trims, adhesives, and labor.
+        </p>
       </div>
     </div>
   );

@@ -12,10 +12,11 @@ export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '/studio', label: 'Flooring Studio', icon: Compass },
-    { href: '/tools', label: 'Tools', icon: Calculator },
+    { href: '/studio', label: 'Studio', icon: Compass },
+    { href: '/calculators', label: 'Calculators', icon: Calculator },
+    { href: '/tools', label: 'Tools', icon: Layers },
     { href: '/guides', label: 'Guides', icon: BookOpen },
-    { href: '/about', label: 'About & Methodology', icon: Layers },
+    { href: '/about', label: 'About', icon: Layers },
   ];
 
   return (

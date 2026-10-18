@@ -1,4 +1,4 @@
-import { FlooringErrors, FlooringInput, FlooringResult, FlooringUnit } from './types';
+import { FlooringErrors, FlooringInput, FlooringResult, FlooringUnit, RoomShape } from './types';
 
 /** Pure calculation utilities; internally, all length is in feet. */
 export const FEET_PER_METER = 3.280839895013123;
@@ -20,14 +20,16 @@ export function convertLength(value: number | string, from: FlooringUnit, to: Fl
 /**
  * Returns a result with valid, errors and numeric values.
  * Waste is an allowance, not a precise cut-list prediction.
+ * Supports both Rectangular and L-shaped room geometry.
  */
 export function calculateFlooring(input: Partial<FlooringInput>): FlooringResult {
   const errors: FlooringErrors = {};
-  const unit = input.unit as FlooringUnit;
+  const unit = (input.unit as FlooringUnit) || 'ft';
   if (unit !== 'ft' && unit !== 'm') {
     errors.unit = 'Choose feet or meters.';
   }
 
+  const shape: RoomShape = input.shape === 'l-shape' ? 'l-shape' : 'rectangle';
   const width = Number(input.width);
   const length = Number(input.length);
   const waste = Number(input.waste);
@@ -42,6 +44,22 @@ export function calculateFlooring(input: Partial<FlooringInput>): FlooringResult
   if (!Number.isFinite(length) || length <= 0 || length > maxDisplayLength) {
     errors.length = `Enter a length greater than 0 and no more than ${maxDisplayLength.toFixed(unit === 'm' ? 1 : 0)} ${unit || 'ft'}.`;
   }
+
+  let cutoutWidth = 0;
+  let cutoutLength = 0;
+
+  if (shape === 'l-shape') {
+    cutoutWidth = Number(input.cutoutWidth ?? 0);
+    cutoutLength = Number(input.cutoutLength ?? 0);
+
+    if (!Number.isFinite(cutoutWidth) || cutoutWidth <= 0 || (Number.isFinite(width) && cutoutWidth >= width)) {
+      errors.cutoutWidth = `Corner cutout width must be between 0 and less than total room width (${width || 0} ${unit}).`;
+    }
+    if (!Number.isFinite(cutoutLength) || cutoutLength <= 0 || (Number.isFinite(length) && cutoutLength >= length)) {
+      errors.cutoutLength = `Corner cutout length must be between 0 and less than total room length (${length || 0} ${unit}).`;
+    }
+  }
+
   if (!Number.isFinite(waste) || waste < 0 || waste > 50) {
     errors.waste = 'Waste allowance must be between 0% and 50%.';
   }
@@ -56,13 +74,22 @@ export function calculateFlooring(input: Partial<FlooringInput>): FlooringResult
   }
 
   if (Object.keys(errors).length > 0) {
-    return { valid: false, errors };
+    return { valid: false, errors, shape };
   }
 
   const widthFt = toFeet(width, unit);
   const lengthFt = toFeet(length, unit);
-  const areaSqFt = widthFt * lengthFt;
+  const cutoutWidthFt = shape === 'l-shape' ? toFeet(cutoutWidth, unit) : 0;
+  const cutoutLengthFt = shape === 'l-shape' ? toFeet(cutoutLength, unit) : 0;
+
+  const boundingAreaSqFt = widthFt * lengthFt;
+  const cutoutAreaSqFt = cutoutWidthFt * cutoutLengthFt;
+  const areaSqFt = Math.max(0.01, boundingAreaSqFt - cutoutAreaSqFt);
   const areaSqM = areaSqFt / SQFT_PER_SQM;
+
+  const perimeterFt = 2 * (widthFt + lengthFt);
+  const perimeterM = perimeterFt / FEET_PER_METER;
+
   const neededSqFt = areaSqFt * (1 + waste / 100);
   const boxes = Math.ceil(neededSqFt / coverage);
   const purchasedSqFt = boxes * coverage;
@@ -73,8 +100,13 @@ export function calculateFlooring(input: Partial<FlooringInput>): FlooringResult
   return {
     valid: true,
     errors: {},
+    shape,
     widthFt,
     lengthFt,
+    cutoutWidthFt: shape === 'l-shape' ? cutoutWidthFt : undefined,
+    cutoutLengthFt: shape === 'l-shape' ? cutoutLengthFt : undefined,
+    perimeterFt,
+    perimeterM,
     areaSqFt,
     areaSqM,
     neededSqFt,

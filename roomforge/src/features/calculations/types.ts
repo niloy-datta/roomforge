@@ -1,25 +1,33 @@
 export type FlooringUnit = 'ft' | 'm';
 
-export type FlooringMaterialKey = 'vinyl' | 'oak' | 'tile' | 'laminate';
+export type RoomShape = 'rectangle' | 'l-shape';
 
-export type FlooringPattern = 'staggered' | 'straight';
+export type FlooringMaterialKey = 'vinyl' | 'oak' | 'tile' | 'laminate' | 'stone' | 'hardwood';
+
+export type FlooringPattern = 'staggered' | 'straight' | 'diagonal' | 'herringbone';
 
 export interface MaterialConfig {
   id: FlooringMaterialKey;
   name: string;
   short: string;
   type: 'plank' | 'tile';
-  coverage: number; // in sq ft
+  category: 'hardwood' | 'laminate' | 'vinyl' | 'ceramic' | 'stone';
+  coverage: number; // in sq ft per box
   price: number; // price per box in USD
   color: string;
   light: string;
   dark: string;
   description: string;
+  waterproof: boolean;
+  durabilityRating: string;
 }
 
 export interface FlooringInput {
+  shape?: RoomShape;
   width: number | string;
   length: number | string;
+  cutoutWidth?: number | string;
+  cutoutLength?: number | string;
   unit: FlooringUnit | string;
   waste: number | string;
   coverage: number | string;
@@ -29,8 +37,11 @@ export interface FlooringInput {
 
 export interface FlooringErrors {
   unit?: string;
+  shape?: string;
   width?: string;
   length?: string;
+  cutoutWidth?: string;
+  cutoutLength?: string;
   waste?: string;
   coverage?: string;
   price?: string;
@@ -40,8 +51,13 @@ export interface FlooringErrors {
 export interface FlooringResult {
   valid: boolean;
   errors: FlooringErrors;
+  shape: RoomShape;
   widthFt?: number;
   lengthFt?: number;
+  cutoutWidthFt?: number;
+  cutoutLengthFt?: number;
+  perimeterFt?: number;
+  perimeterM?: number;
   areaSqFt?: number;
   areaSqM?: number;
   neededSqFt?: number;
@@ -57,8 +73,11 @@ export interface FlooringResult {
 }
 
 export interface StudioSettings {
+  shape: RoomShape;
   width: number;
   length: number;
+  cutoutWidth: number;
+  cutoutLength: number;
   unit: FlooringUnit;
   material: FlooringMaterialKey;
   pattern: FlooringPattern;
@@ -66,4 +85,5 @@ export interface StudioSettings {
   coverage: number;
   price: number;
   tax: number;
+  showGrid?: boolean;
 }

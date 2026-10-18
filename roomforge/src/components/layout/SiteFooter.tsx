@@ -29,80 +29,114 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Calculators Navigation */}
           <div>
-            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Studio & Tools</h4>
+            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Construction Calculators</h4>
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              <li>
+                <Link href="/calculators/flooring" className="hover:text-forest transition-colors">
+                  Flooring & Carton Calculator
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/tile" className="hover:text-forest transition-colors">
+                  Tile & Grout Calculator
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/paint" className="hover:text-forest transition-colors">
+                  Paint & Surface Area
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/concrete" className="hover:text-forest transition-colors">
+                  Concrete Slab & Yards
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/drywall" className="hover:text-forest transition-colors">
+                  Drywall Sheets & Mud
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/renovation-cost" className="hover:text-forest transition-colors">
+                  Renovation Cost Estimator
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators/material-comparison" className="hover:text-forest transition-colors">
+                  Material 10-Yr TCO
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Guides & Tools */}
+          <div>
+            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Studio & Guides</h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
                 <Link href="/studio" className="hover:text-forest transition-colors flex items-center gap-1">
-                  Flooring Studio <ArrowUpRight className="h-3 w-3 opacity-60" />
+                  2D Room Studio <ArrowUpRight className="h-3 w-3 opacity-60" />
+                </Link>
+              </li>
+              <li>
+                <Link href="/calculators" className="hover:text-forest transition-colors">
+                  All Calculators Directory
                 </Link>
               </li>
               <li>
                 <Link href="/tools" className="hover:text-forest transition-colors">
-                  Flooring Tools Suite
-                </Link>
-              </li>
-              <li>
-                <Link href="/tools?tab=converter" className="hover:text-forest transition-colors">
-                  Feet to Meters Converter
-                </Link>
-              </li>
-              <li>
-                <Link href="/tools?tab=waste" className="hover:text-forest transition-colors">
-                  Pattern Waste Estimator
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Guides */}
-          <div>
-            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Field Guides</h4>
-            <ul className="space-y-2 text-xs text-muted-foreground">
-              <li>
-                <Link href="/guides/flooring-calculator" className="hover:text-forest transition-colors">
-                  How to Calculate Flooring Boxes
+                  Quick Toolkit & Converter
                 </Link>
               </li>
               <li>
                 <Link href="/guides" className="hover:text-forest transition-colors">
-                  All Field Guides & Formulas
-                </Link>
-              </li>
-              <li>
-                <Link href="/about#transparency" className="hover:text-forest transition-colors">
-                  Deterministic Math Specs
+                  Field Guides & Methodologies
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="hover:text-forest transition-colors">
-                  Architecture & Methodology
+                  About & Standards
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Disclaimers & Info */}
+          {/* Legal & Disclaimers */}
           <div>
-            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Transparency</h4>
+            <h4 className="text-xs font-bold tracking-wider uppercase text-forest mb-3">Legal & Compliance</h4>
             <p className="text-[11px] text-muted leading-relaxed">
-              Material cost estimates exclude labor, subfloor prep, trims, transitions, and delivery. Waste allowance is an estimation factor, not an individualized cutting diagram.
+              Material cost estimates are mathematical projections for planning guidance and do not replace certified engineering blueprints or on-site inspections.
             </p>
+            <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+              <div>
+                <Link href="/privacy" className="hover:text-forest transition-colors">
+                  Privacy Policy & Cookies
+                </Link>
+              </div>
+              <div>
+                <Link href="/terms" className="hover:text-forest transition-colors">
+                  Terms of Service & Disclaimer
+                </Link>
+              </div>
+            </div>
             <div className="mt-4 p-3 rounded-lg bg-sand-300/40 border border-sand-300/60 text-[11px] text-forest font-medium flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-clay-600 flex-shrink-0" />
-              <span>Free, open and running completely in your browser.</span>
+              <span>100% Free & client-side calculation privacy.</span>
             </div>
           </div>
         </div>
 
         <div className="mt-12 pt-6 border-t border-sand-300 flex flex-col sm:flex-row items-center justify-between text-xs text-muted gap-4">
           <p>© {new Date().getFullYear()} ROOMFORGE. Better spaces begin with a better plan.</p>
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link href="/studio" className="hover:text-forest transition-colors">Studio</Link>
+            <Link href="/calculators" className="hover:text-forest transition-colors">Calculators</Link>
             <Link href="/tools" className="hover:text-forest transition-colors">Tools</Link>
             <Link href="/guides" className="hover:text-forest transition-colors">Guides</Link>
-            <Link href="/about" className="hover:text-forest transition-colors">About</Link>
+            <Link href="/privacy" className="hover:text-forest transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-forest transition-colors">Terms</Link>
           </div>
         </div>
       </div>

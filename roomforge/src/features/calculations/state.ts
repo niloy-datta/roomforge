@@ -5,8 +5,11 @@ import { FlooringMaterialKey, FlooringPattern, FlooringUnit, StudioSettings } fr
 export const STORAGE_KEY = 'roomforge-project-v2';
 
 export const PARAM_MAP: Record<keyof StudioSettings, string> = {
+  shape: 's',
   width: 'w',
   length: 'l',
+  cutoutWidth: 'cw',
+  cutoutLength: 'cl',
   unit: 'u',
   material: 'm',
   pattern: 'p',
@@ -14,10 +17,17 @@ export const PARAM_MAP: Record<keyof StudioSettings, string> = {
   coverage: 'c',
   price: 'pr',
   tax: 'tx',
+  showGrid: 'gr',
 };
 
 export function validatedSettings(candidate: Partial<Record<string, unknown>> = {}): StudioSettings {
   const settings: StudioSettings = { ...DEFAULT_SETTINGS };
+
+  if (candidate.shape === 'l-shape' || candidate.shape === 'l') {
+    settings.shape = 'l-shape';
+  } else {
+    settings.shape = 'rectangle';
+  }
 
   if (candidate.width !== undefined && candidate.width !== null && candidate.width !== '') {
     const val = Number(candidate.width);
@@ -26,6 +36,14 @@ export function validatedSettings(candidate: Partial<Record<string, unknown>> = 
   if (candidate.length !== undefined && candidate.length !== null && candidate.length !== '') {
     const val = Number(candidate.length);
     if (Number.isFinite(val)) settings.length = val;
+  }
+  if (candidate.cutoutWidth !== undefined && candidate.cutoutWidth !== null && candidate.cutoutWidth !== '') {
+    const val = Number(candidate.cutoutWidth);
+    if (Number.isFinite(val)) settings.cutoutWidth = val;
+  }
+  if (candidate.cutoutLength !== undefined && candidate.cutoutLength !== null && candidate.cutoutLength !== '') {
+    const val = Number(candidate.cutoutLength);
+    if (Number.isFinite(val)) settings.cutoutLength = val;
   }
   if (candidate.waste !== undefined && candidate.waste !== null && candidate.waste !== '') {
     const val = Number(candidate.waste);
@@ -43,12 +61,17 @@ export function validatedSettings(candidate: Partial<Record<string, unknown>> = 
     const val = Number(candidate.tax);
     if (Number.isFinite(val)) settings.tax = val;
   }
+  if (candidate.showGrid !== undefined) {
+    settings.showGrid = candidate.showGrid === true || candidate.showGrid === '1' || candidate.showGrid === 'true';
+  }
 
   const mat = String(candidate.material || '');
   if (mat in MATERIALS) settings.material = mat as FlooringMaterialKey;
 
   const pat = String(candidate.pattern || '');
-  if (pat === 'straight' || pat === 'staggered') settings.pattern = pat as FlooringPattern;
+  if (pat === 'straight' || pat === 'staggered' || pat === 'diagonal' || pat === 'herringbone') {
+    settings.pattern = pat as FlooringPattern;
+  }
 
   const un = String(candidate.unit || '');
   if (un === 'ft' || un === 'm') settings.unit = un as FlooringUnit;

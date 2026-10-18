@@ -4,6 +4,7 @@ import { validatedSettings } from './state';
 import { FlooringInput } from './types';
 
 const base: FlooringInput = {
+  shape: 'rectangle',
   width: 12,
   length: 18,
   unit: 'ft',
@@ -22,6 +23,7 @@ describe('Flooring Calculations Engine', () => {
     expect(res.boxes).toBe(10);
     expect(res.materialCost).toBe(450);
     expect(res.totalCost).toBe(450);
+    expect(res.perimeterFt).toBe(60);
   });
 
   it('metric inputs preserve measurement accurately', () => {
@@ -47,6 +49,41 @@ describe('Flooring Calculations Engine', () => {
     const res = calculateFlooring({ ...base, tax: 8.5 });
     expect(res.taxAmount).toBe(38.25);
     expect(res.totalCost).toBe(488.25);
+  });
+
+  it('calculates L-shaped room geometry accurately', () => {
+    const lRoom: FlooringInput = {
+      shape: 'l-shape',
+      width: 12,
+      length: 18,
+      cutoutWidth: 4,
+      cutoutLength: 6,
+      unit: 'ft',
+      waste: 10,
+      coverage: 24,
+      price: 45,
+      tax: 0,
+    };
+    const res = calculateFlooring(lRoom);
+    expect(res.valid).toBe(true);
+    // Bounding 12x18 = 216, cutout 4x6 = 24 => Net area = 192 sq ft
+    expect(res.areaSqFt).toBe(192);
+    expect(res.neededSqFt).toBeCloseTo(192 * 1.10, 5);
+    // 211.2 / 24 = 8.8 => 9 boxes
+    expect(res.boxes).toBe(9);
+    expect(res.materialCost).toBe(9 * 45);
+    expect(res.perimeterFt).toBe(60);
+  });
+
+  it('rejects invalid L-shape cutout dimensions', () => {
+    // Cutout width equal or greater than room width
+    expect(calculateFlooring({ ...base, shape: 'l-shape', cutoutWidth: 12, cutoutLength: 6 }).valid).toBe(false);
+    expect(calculateFlooring({ ...base, shape: 'l-shape', cutoutWidth: 14, cutoutLength: 6 }).valid).toBe(false);
+    // Cutout length equal or greater than room length
+    expect(calculateFlooring({ ...base, shape: 'l-shape', cutoutWidth: 4, cutoutLength: 18 }).valid).toBe(false);
+    expect(calculateFlooring({ ...base, shape: 'l-shape', cutoutWidth: 4, cutoutLength: 20 }).valid).toBe(false);
+    // Negative or 0 cutout
+    expect(calculateFlooring({ ...base, shape: 'l-shape', cutoutWidth: 0, cutoutLength: 6 }).valid).toBe(false);
   });
 
   it('validates geometry, missing/invalid, absurd values', () => {
@@ -76,6 +113,7 @@ describe('Flooring Calculations Engine', () => {
     expect(validatedSettings({ width: -999 }).width).toBe(12);
     expect(validatedSettings({ material: 'bad' }).material).toBe('vinyl');
     expect(validatedSettings({ width: '15', length: '20' }).width).toBe(15);
+    expect(validatedSettings({ shape: 'l' }).shape).toBe('l-shape');
   });
 
   it('conversion constants match reference', () => {
