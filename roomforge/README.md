@@ -1,67 +1,59 @@
-# ROOMFORGE — Visual Flooring Studio
+# ROOMFORGE — Visual Flooring Studio & Material Estimator
 
-A premium, responsive, ad-ready **static web app** to calculate flooring boxes, visualize a rectangular 2D room and estimate material costs. No Lovable, paid service, framework installation, database or API key required.
+A production-grade, architectural Next.js App Router application to calculate flooring boxes, visualize rectangular 2D rooms with live SVG scaling, estimate material budgets, and benchmark installation waste factors.
 
-## Run in seconds
+## 🚀 Quick Start
 
+### Installation
 ```bash
-python3 -m http.server 8000
+npm install
 ```
 
-Visit `http://localhost:8000` in your browser. See [DEPLOY.md](DEPLOY.md) for publishing it to GitHub Pages.
-
-## Features
-
-- Architectural landing page with room-dimension quick start
-- Responsive three-panel studio, mobile tabs
-- Live SVG 2D flooring preview, material/pattern switching and zoom
-- Feet/meters conversion that preserves dimensions
-- Mathematically tested area, waste allowance, box rounding, prices and optional tax
-- Explicit price disclaimers and inline validation
-- Local browser saving, shareable URL, copyable estimate, printable shopping list
-- Original flooring formula guide and reserved, labeled future ad space
-- Semantic page titles/descriptions and reduced-motion behavior
-
-## Stack
-
-- Pure HTML5, CSS3, ES modules in modern JavaScript
-- Native Node.js test runner, **zero npm runtime dependencies**
-- GitHub Pages and any static host compatible
-
-Static browser modules were chosen to make a fully runnable and testable MVP in this environment, where installing npm dependencies is unavailable. The calculation modules are independent of the UI and can later be reused in a Next.js/TypeScript migration.
-
-## Repository layout
-
-```text
-index.html                       Landing page & quick start
-studio.html                      Interactive flooring studio
-guides/flooring-calculator.html  Math guide and FAQ
-src/core/calculations.js         Deterministic math functions
-src/core/materials.js            Material presets
-src/core/state.js                Browser save and share logic
-src/ui/floor-plan.js             Scaled SVG renderer
-src/pages/home.js                Homepage controller
-src/pages/studio.js              Studio controller
-assets/styles.css                Responsive design system
-assets/favicon.svg               Original favicon
-tests/                           Native Node.js tests
-```
-
-## Check the math
-
+### Development Server
 ```bash
-npm test
+npm run dev
+```
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Verification & Testing
+```bash
+npm run test         # Run Vitest unit & component test suite
+npm run test:legacy  # Run preserved legacy native node test suite
+npm run test:all     # Run both test suites
+npm run typecheck    # Validate TypeScript strict mode (zero errors)
+npm run lint         # Run ESLint validation (zero warnings/errors)
+npm run build        # Build optimized production bundle
 ```
 
-Example: 12 × 18 ft with 10% waste, 24 ft²/box and $45/box yields **216 ft²**, **237.6 ft²** required, **10 boxes**, **$450** material cost before tax.
+---
 
-## Important disclaimers
+## 🏗️ Architecture & Features
 
-Estimates do not include labor, delivery, trims, transitions, underlayment, subfloor preparation or cutting optimization. All example prices are editable and are not live market quotes. Google AdSense approval and publisher script setup are NOT part of this MVP.
+- **Framework**: Next.js 15 App Router with React 19 and TypeScript strict mode.
+- **Styling**: Tailwind CSS with custom architectural palette (`sand`, `sage`, `clay`, `forest`), glassmorphism, responsive mobile-first layouts, and dedicated print stylesheets.
+- **Visual Studio**: Interactive scaled 2D SVG canvas with zoom, live dimensions, door cutaways, and dynamic pattern rendering (Luxury Vinyl Plank, Engineered Oak, Porcelain Tile, Oak-look Laminate).
+- **Core Routes**:
+  - `/`: Architectural landing page, quick-start calculator, interactive living room preview, process steps, math breakdown, and FAQ.
+  - `/studio`: Full 3-panel interactive studio with dimensions panel, 2D floor visualizer, and live estimate breakdown. Includes URL sharing, clipboard copy, print-ready reports, and local storage persistence.
+  - `/tools`: Suite of dedicated utilities including Carton Calculator, Pattern Waste Factor Advisor, Area & Length Converter (`ft²` ↔ `m²`, `ft` ↔ `m`), and Side-by-Side Material Price Benchmark.
+  - `/guides`: Field guides directory and in-depth guide readers (e.g. `/guides/flooring-calculator`, `/guides/laying-patterns`).
+  - `/about`: Engineering methodology, deterministic formula specification, site condition disclaimers, and architectural mission.
+  - `/sitemap.xml`: Dynamic search engine index.
 
-## Deployment status and CI
+---
 
-- `vercel.json` supports Vercel static deployments with basic security response headers. No build step or secrets required.
-- `.github/workflows/ci.yml` tests committed changes and checks JavaScript syntax on pushes to `main` and pull requests.
-- `robots.txt` allows crawlers; add `sitemap.xml` and canonical URLs **only after a real production domain is selected**.
-- Actual publisher approval, ad serving, analytics credentials, GitHub remote creation, and production deployment must be verified separately; none are implied by these files.
+## 📐 Deterministic Math Specification
+
+1. **Room Area**: `Area = width × length` (internally computed in feet, converted accurately for metric users).
+2. **Waste Allowance**: `Needed Area = Area × (1 + waste % / 100)`.
+3. **Carton Ceiling**: `Boxes = Math.ceil(Needed Area / Box Coverage)`.
+4. **Material Cost**: `Cost = Boxes × Price per Box`.
+5. **Sales Tax**: Computed on material subtotal without intermediate rounding.
+
+---
+
+## 🛡️ Protected Legacy Functionality
+
+The original vanilla HTML/CSS/JavaScript MVP is 100% preserved in `legacy/`:
+- Legacy tests run via `npm run test:legacy` (`node --test legacy/tests/*.test.mjs`).
+- Standalone HTML files are available in `legacy/index.html`, `legacy/studio.html`, and `legacy/guides/`.

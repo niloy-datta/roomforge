@@ -1,0 +1,16 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "warn",
+    "react/no-unescaped-entities": "error"
+  },
+  "ignorePatterns": [
+    "legacy/**",
+    "tests/*.mjs",
+    "node_modules/**",
+    ".next/**"
+  ]
+}

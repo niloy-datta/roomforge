@@ -1,10 +1,15 @@
-.DS_Store
 node_modules/
+.next/
+out/
+build/
+dist/
 coverage/
 *.log
+*.tsbuildinfo
+next-env.d.ts
+playwright-report/
+test-results/
 .env
 .env.*
 !.env.example
-
-# Generated self-contained distribution
-dist/
+.DS_Store
