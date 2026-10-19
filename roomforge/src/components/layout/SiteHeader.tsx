@@ -72,6 +72,7 @@ export function SiteHeader() {
         {/* Mobile Hamburger */}
         <div className="flex md:hidden">
           <button
+            id="mobile-menu-toggle"
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 rounded-lg text-forest hover:bg-sand-200 focus:outline-none focus:ring-2 focus:ring-sage-500"
@@ -86,7 +87,7 @@ export function SiteHeader() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-sand-300 bg-sand-100/98 px-4 pt-2 pb-6 space-y-3">
-          <nav className="flex flex-col space-y-1">
+          <nav id="mobile-nav" className="flex flex-col space-y-1" aria-label="Mobile navigation">
             {navLinks.map((link) => {
               const Icon = link.icon;
               const isActive = pathname ? (pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))) : false;

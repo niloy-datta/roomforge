@@ -130,9 +130,9 @@ export default function PrivacyPolicyPage() {
               6. Contact Us
             </h2>
             <p className="text-sm leading-relaxed text-muted">
-              If you have any questions or data privacy inquiries regarding this policy, please reach out via our open GitHub repository or email us at{' '}
-              <a href="mailto:privacy@roomforge.app" className="text-forest font-bold underline">
-                privacy@roomforge.app
+              If you have any questions or data privacy inquiries regarding this policy, please reach out via our open GitHub repository at{' '}
+              <a href="https://github.com/niloy-datta/roomforge/issues" target="_blank" rel="noopener noreferrer" className="text-forest font-bold underline">
+                github.com/niloy-datta/roomforge
               </a>.
             </p>
           </section>

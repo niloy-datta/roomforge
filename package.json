@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "description": "ROOMFORGE — Architectural Renovation Platform and Material Calculators Suite",
+  "workspaces": [
+    "roomforge"
+  ],
   "scripts": {
     "dev": "npm --prefix roomforge run dev",
     "build": "npm --prefix roomforge run build",

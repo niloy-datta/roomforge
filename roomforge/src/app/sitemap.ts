@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { GUIDES } from '@/features/guides/guidesData';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roomforge.pages.dev';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roomforge.vercel.app';
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

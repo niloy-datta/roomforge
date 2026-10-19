@@ -4,11 +4,17 @@ on:
     branches: [main]
     paths:
       - 'roomforge/**'
-      - '.github/workflows/roomforge-ci.yml'
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'vercel.json'
+      - 'package-lock.json'
   pull_request:
     paths:
       - 'roomforge/**'
-      - '.github/workflows/roomforge-ci.yml'
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'vercel.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 jobs:

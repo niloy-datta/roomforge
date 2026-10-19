@@ -3,5 +3,16 @@
   "framework": "nextjs",
   "installCommand": "cd roomforge && npm install",
   "buildCommand": "cd roomforge && npm run build",
-  "outputDirectory": "roomforge/.next"
+  "outputDirectory": "roomforge/.next",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {"key": "X-Content-Type-Options", "value": "nosniff"},
+        {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
+        {"key": "X-Frame-Options", "value": "SAMEORIGIN"},
+        {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()"}
+      ]
+    }
+  ]
 }

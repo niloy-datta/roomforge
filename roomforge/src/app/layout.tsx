@@ -4,7 +4,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SkipLink } from '@/components/layout/SkipLink';
 import './globals.css';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roomforge.pages.dev';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://roomforge.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
